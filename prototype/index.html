@@ -1,0 +1,1170 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Cloudly Glass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout concept: a single Android phone (390x844 logical px, scaled to fit) in the middle,
+   a quiet tuner on the left, live palette + spring tokens on the right.
+   Palette: ink blacks, warm paper text, three colours (--c1 glow, --c2 echo, --c3 deep) lifted from the playing cover. */
+:root{
+  color-scheme: dark;
+  --ink-950:#040406; --ink-900:#09090d; --ink-800:#101016; --ink-700:#181821;
+  --text:#f3efe9; --text-2:rgba(243,239,233,.64); --text-3:rgba(243,239,233,.38);
+  --line:rgba(255,255,255,.09);
+  --c1:rgb(255,106,61); --c2:rgb(138,31,92); --c3:rgb(20,7,28);
+  --font-display:'Cormorant Garamond','Iowan Old Style','Times New Roman',serif;
+  --font-ui:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --tm:1; --grain:.5; --blur:20px; --aurora:1;
+  --lx:.2; --ly:.0; --p:0;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--ink-950); color:var(--text);
+  font:500 14px/1.4 var(--font-ui); -webkit-font-smoothing:antialiased;
+  padding-block:0;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  overflow:hidden;
+}
+button{font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible{outline:2px solid var(--c1); outline-offset:2px}
+.mono{font-family:var(--font-mono)}
+.display{font-family:var(--font-display)}
+.eyebrow{font:500 10.5px/1 var(--font-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--text-3)}
+
+/* ---------- stage ---------- */
+.stage{height:100%; display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:clamp(20px,3vw,56px); max-width:1500px; margin:0 auto}
+.slot{width:calc(390px*var(--s,1)); height:calc(844px*var(--s,1)); position:relative; flex:none}
+.side{min-width:0; max-height:100%; overflow-y:auto; padding-block:28px; scrollbar-width:none; display:flex; flex-direction:column; gap:28px}
+.side::-webkit-scrollbar{display:none}
+.side.left{align-items:flex-end}
+.side.left>*{width:min(100%,300px)}
+.side.right>*{width:min(100%,300px)}
+.brand h1{font:600 64px/.9 var(--font-display); margin:14px 0 14px; letter-spacing:-.02em; font-style:italic}
+.brand p{margin:0; color:var(--text-2); font-size:14px; max-width:26ch; text-wrap:balance}
+.panel{border-top:1px solid var(--line); padding-top:16px; display:flex; flex-direction:column; gap:14px}
+.panel h2{margin:0}
+.ctl{display:grid; gap:7px}
+.ctl label{display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-2)}
+.ctl output{font:500 11.5px var(--font-mono); color:var(--text)}
+input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:20px; background:transparent; margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px; border-radius:2px; background:linear-gradient(90deg,var(--c1) var(--v,50%),rgba(255,255,255,.14) var(--v,50%))}
+input[type=range]::-moz-range-track{height:3px; border-radius:2px; background:rgba(255,255,255,.14)}
+input[type=range]::-moz-range-progress{height:3px; border-radius:2px; background:var(--c1)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:16px; height:16px; border-radius:50%; margin-top:-6.5px; background:#fff; border:0; box-shadow:0 0 0 4px color-mix(in oklab,var(--c1) 30%,transparent),0 2px 6px rgba(0,0,0,.5)}
+input[type=range]::-moz-range-thumb{width:16px; height:16px; border-radius:50%; background:#fff; border:0}
+.chk{display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--text-2); cursor:pointer}
+.chk input{width:16px; height:16px; accent-color:var(--c1); margin:0}
+.pill{align-self:flex-start; padding:8px 14px; border-radius:99px; border:1px solid var(--line); font-size:12.5px; color:var(--text-2); transition:background .3s, color .3s}
+.pill:hover,.pill[aria-pressed=true]{background:rgba(255,255,255,.08); color:var(--text)}
+.tips{margin:0; padding:0; list-style:none; display:grid; gap:10px; font-size:12.5px; color:var(--text-2)}
+.tips li{display:grid; grid-template-columns:18px 1fr; gap:8px}
+.tips li::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--c1); margin-top:6px; box-shadow:0 0 10px var(--c1)}
+.sw{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.sw div{height:74px; border-radius:16px; padding:9px 10px; display:flex; flex-direction:column; justify-content:flex-end; font:500 10px/1.3 var(--font-mono); letter-spacing:.04em; color:rgba(255,255,255,.88); text-shadow:0 1px 3px rgba(0,0,0,.4); position:relative; overflow:hidden}
+.sw b{font-weight:500; text-transform:uppercase; opacity:.7}
+.spr{display:grid; grid-template-columns:96px 1fr; gap:12px; align-items:center}
+.spr svg{width:96px; height:44px; overflow:visible}
+.spr b{display:block; font-size:13px; font-weight:700}
+.spr span{display:block; font:400 10.5px/1.45 var(--font-mono); color:var(--text-3)}
+.np{display:grid; gap:6px; font:400 11.5px/1.5 var(--font-mono); color:var(--text-2)}
+.np b{color:var(--text); font-weight:500}
+
+/* ---------- phone ---------- */
+.phone{
+  position:absolute; left:0; top:0; width:390px; height:844px; transform-origin:0 0; transform:scale(var(--s,1));
+  border-radius:54px; overflow:hidden; background:var(--ink-950); isolation:isolate; user-select:none; -webkit-user-select:none;
+  box-shadow:0 0 0 9px #0c0c11, 0 0 0 10px rgba(255,255,255,.13), 0 70px 120px -30px rgba(0,0,0,.85), 0 0 140px -30px color-mix(in oklab,var(--c1) 40%, transparent);
+  touch-action:none;
+}
+.frameless .phone{border-radius:30px; box-shadow:none}
+.bg{position:absolute; inset:0; z-index:0; background:radial-gradient(120% 70% at 50% 0%, var(--ink-800), var(--ink-950) 70%)}
+.aurora{position:absolute; inset:0; overflow:hidden; opacity:calc(var(--aurora) * var(--ao,.6)); pointer-events:none}
+.aurora i{position:absolute; width:190%; aspect-ratio:1; border-radius:50%; will-change:transform}
+.aurora i:nth-child(1){left:-45%; top:-70%; animation:spin 46s linear infinite;
+  background:radial-gradient(closest-side at 32% 36%, var(--c1), transparent 72%), radial-gradient(closest-side at 70% 62%, var(--c2), transparent 74%)}
+.aurora i:nth-child(2){left:-80%; top:-30%; opacity:.75; animation:spin 64s linear infinite reverse;
+  background:radial-gradient(closest-side at 62% 30%, color-mix(in oklab,var(--c1) 65%, #fff), transparent 58%), radial-gradient(closest-side at 24% 70%, var(--c3), transparent 72%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bg .aurora{--ao:.55; -webkit-mask-image:linear-gradient(#000, transparent 62%); mask-image:linear-gradient(#000, transparent 62%)}
+.vig{position:absolute; inset:0; z-index:90; pointer-events:none; background:radial-gradient(130% 100% at 50% 40%, transparent 55%, rgba(0,0,0,.42))}
+.grain{position:absolute; inset:-120px; z-index:100; pointer-events:none; background-size:200px 200px; opacity:var(--grain); animation:grain 1.1s steps(1) infinite}
+@keyframes grain{
+  0%{transform:translate(0,0)} 10%{transform:translate(-37px,-71px)} 20%{transform:translate(52px,18px)} 30%{transform:translate(-80px,43px)}
+  40%{transform:translate(29px,-90px)} 50%{transform:translate(-14px,66px)} 60%{transform:translate(77px,-33px)} 70%{transform:translate(-61px,-12px)}
+  80%{transform:translate(8px,84px)} 90%{transform:translate(-45px,31px)}
+}
+.sb{position:absolute; top:0; left:0; right:0; height:46px; z-index:60; display:flex; justify-content:space-between; align-items:center; padding:2px 30px 0 32px; font:700 14px var(--font-ui); pointer-events:none}
+.sb .ic{display:flex; gap:6px; align-items:center}
+.sbfade{position:absolute; top:0; left:0; right:0; height:84px; z-index:55; pointer-events:none; background:linear-gradient(var(--ink-950) 8%, transparent)}
+.hole{position:absolute; top:13px; left:50%; width:14px; height:14px; margin-left:-7px; border-radius:50%; background:#000; z-index:61; box-shadow:0 0 0 2px #0b0b0f}
+.gest{position:absolute; bottom:8px; left:50%; width:124px; height:4px; margin-left:-62px; border-radius:2px; background:rgba(255,255,255,.55); z-index:95; pointer-events:none}
+
+/* ---------- glass ---------- */
+.glass{
+  position:relative; isolation:isolate;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035) 55%, rgba(255,255,255,.07)),
+    color-mix(in oklab, var(--c3) 42%, rgba(12,12,16,.46));
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(1.7);
+  backdrop-filter:blur(var(--blur)) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.15),
+    inset 0 -14px 22px -14px color-mix(in oklab, var(--c1) 60%, transparent),
+    0 16px 36px -12px rgba(0,0,0,.7), 0 1px 3px rgba(0,0,0,.4);
+}
+.glass::before{
+  content:""; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none; z-index:2;
+  background:
+    radial-gradient(190px 90px at calc(var(--lx)*100%) calc(var(--ly)*100%), rgba(255,255,255,.95), rgba(255,255,255,0) 72%),
+    linear-gradient(180deg, rgba(255,255,255,.3), rgba(255,255,255,.05) 38%, rgba(255,255,255,.05) 62%, rgba(255,255,255,.18));
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+}
+.press{transition:transform .55s var(--ease-spring); will-change:transform}
+.press:active{transform:scale(.95); transition-duration:.1s}
+
+/* ---------- screens ---------- */
+.screens{position:absolute; inset:0; z-index:10; transform-origin:50% 40%; will-change:transform}
+.screen{position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; padding:58px 16px 200px; scrollbar-width:none;
+  opacity:0; visibility:hidden; transform:translateY(12px) scale(.985); filter:blur(8px); pointer-events:none;
+  transition:opacity calc(.45s*var(--tm)) var(--ease-out), transform calc(.5s*var(--tm)) var(--ease-out), filter calc(.45s*var(--tm)) var(--ease-out), visibility 0s calc(.5s*var(--tm));
+  touch-action:pan-y}
+.screen::-webkit-scrollbar{display:none}
+.screen.on{opacity:1; visibility:visible; transform:none; filter:none; pointer-events:auto; transition-delay:0s}
+.dockfade{position:absolute; left:0; right:0; bottom:0; height:250px; z-index:25; pointer-events:none; background:linear-gradient(transparent, rgba(4,4,6,.78) 55%, rgba(4,4,6,.92))}
+.shade{position:absolute; inset:0; z-index:20; background:#000; opacity:0; pointer-events:none}
+.in{animation:rise calc(.9s*var(--tm)) var(--ease-out) backwards; animation-delay:calc(var(--i,0)*80ms*var(--tm))}
+@keyframes rise{from{opacity:0; transform:translateY(22px); filter:blur(8px)}}
+.hdr{display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin:6px 0 22px}
+.hdr h1{font:600 40px/.98 var(--font-display); margin:12px 0 0; letter-spacing:-.015em; font-style:italic; text-wrap:balance}
+.gbtn{width:44px; height:44px; border-radius:50%; display:grid; place-items:center; flex:none}
+.gbtn svg{width:21px; height:21px}
+.sec{display:flex; justify-content:space-between; align-items:baseline; margin:30px 0 14px}
+.sec h2{margin:0; font:600 25px/1 var(--font-display); letter-spacing:-.005em}
+.sec span{font:500 11px var(--font-mono); letter-spacing:.08em; color:var(--text-3); text-transform:uppercase}
+.hero{position:relative; height:226px; border-radius:34px; overflow:hidden; isolation:isolate; background:var(--ink-800); box-shadow:0 24px 50px -22px color-mix(in oklab,var(--h1,#ff3d8b) 70%, transparent), inset 0 0 0 1px rgba(255,255,255,.08); cursor:pointer}
+.hero .hb{position:absolute; inset:-35%; animation:spin 52s linear infinite;
+  background:radial-gradient(closest-side at 30% 40%, var(--h1), transparent 70%), radial-gradient(closest-side at 72% 62%, var(--h2), transparent 72%), radial-gradient(closest-side at 80% 22%, color-mix(in oklab,var(--h1) 60%, #fff), transparent 60%)}
+.hero::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 18%, rgba(4,4,6,.72)); z-index:1}
+.hero .hc{position:absolute; inset:0; z-index:2; padding:22px; display:flex; flex-direction:column; justify-content:flex-end; gap:8px}
+.hero h3{margin:0; font:600 34px/.98 var(--font-display); font-style:italic; text-wrap:balance; letter-spacing:-.01em}
+.hero p{margin:0; font:500 11px var(--font-mono); color:rgba(255,255,255,.7); letter-spacing:.04em}
+.hero .hr{display:flex; align-items:center; justify-content:space-between; margin-top:6px}
+.cta{height:42px; padding:0 20px 0 14px; border-radius:21px; display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:14px}
+.cta svg{width:20px; height:20px}
+.rail{display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory; margin:0 -16px; padding:2px 16px 6px; scrollbar-width:none; touch-action:pan-x}
+.rail::-webkit-scrollbar{display:none}
+.card{flex:0 0 150px; scroll-snap-align:start; display:grid; gap:10px; cursor:pointer; text-align:left}
+.card img{width:150px; height:150px; border-radius:28px; object-fit:cover; box-shadow:0 18px 30px -16px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,.08); display:block}
+.card b{display:block; font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.card span{display:block; font-size:12.5px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px}
+.rows{display:grid; gap:2px; margin:0 -8px}
+.row{display:grid; grid-template-columns:54px minmax(0,1fr) auto auto; gap:12px; align-items:center; padding:8px; border-radius:22px; cursor:pointer}
+.row:hover{background:rgba(255,255,255,.04)}
+.row.now{background:linear-gradient(90deg, color-mix(in oklab,var(--c1) 16%, transparent), transparent)}
+.rw-cov{width:54px; height:54px; border-radius:16px; object-fit:cover; box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.rw-t{font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.row.now .rw-t{color:color-mix(in oklab,var(--c1) 55%, #fff)}
+.rw-a{display:flex; align-items:center; gap:8px; margin-top:3px; font-size:12.5px; color:var(--text-2); white-space:nowrap; overflow:hidden}
+.rw-a em{font-style:normal; overflow:hidden; text-overflow:ellipsis}
+.rw-d{font-size:11.5px; color:var(--text-3)}
+.q{flex:none; font:500 9.5px/1 var(--font-mono); letter-spacing:.06em; padding:3px 5px; border-radius:5px; background:rgba(255,255,255,.08); color:var(--text-2); text-transform:uppercase}
+.q.hi{background:color-mix(in oklab,var(--c1) 22%, transparent); color:color-mix(in oklab,var(--c1) 60%, #fff)}
+.eq{display:none; height:14px; gap:2px; align-items:flex-end}
+.row.now .eq{display:inline-flex}
+.row.now .rw-d{display:none}
+.eq i{width:3px; height:100%; background:var(--c1); border-radius:2px; transform-origin:bottom; animation:eq 1s ease-in-out infinite; animation-play-state:paused}
+.eq i:nth-child(2){animation-delay:-.35s; animation-duration:.8s}
+.eq i:nth-child(3){animation-delay:-.7s; animation-duration:1.15s}
+.is-playing .eq i{animation-play-state:running}
+@keyframes eq{0%,100%{transform:scaleY(.25)} 50%{transform:scaleY(1)}}
+.moods{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.mood{position:relative; height:104px; border-radius:26px; overflow:hidden; padding:14px; display:flex; flex-direction:column; justify-content:flex-end; cursor:pointer; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.mood b{font:600 24px/1 var(--font-display); font-style:italic; position:relative}
+.mood span{font:500 10px var(--font-mono); letter-spacing:.08em; opacity:.7; text-transform:uppercase; position:relative; margin-top:5px}
+
+/* dl button */
+.dl{position:relative; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:var(--text-2); flex:none}
+.dl svg.ring{position:absolute; inset:5px; width:28px; height:28px; transform:rotate(-90deg)}
+.dl .rg-bg{fill:none; stroke:rgba(255,255,255,.14); stroke-width:1.6; opacity:0; transition:opacity .3s}
+.dl .rg-fg{fill:none; stroke:var(--c1); stroke-width:2; stroke-linecap:round; stroke-dasharray:56.55; stroke-dashoffset:calc(56.55*(1 - var(--prog,0))); opacity:0}
+.dl .di{position:absolute; inset:0; display:grid; place-items:center; transition:transform .5s var(--ease-spring), opacity .25s}
+.dl .di svg{width:19px; height:19px}
+.dl .di-chk{opacity:0; transform:scale(.4); color:var(--on-glow,#0a0a0e)}
+.dl::after{content:""; position:absolute; inset:7px; border-radius:50%; background:var(--c1); transform:scale(0); transition:transform .55s var(--ease-spring); z-index:-1}
+.dl[data-state=dl] .rg-bg,.dl[data-state=dl] .rg-fg{opacity:1}
+.dl[data-state=dl] .di-idle{transform:scale(.7); color:var(--c1)}
+.dl[data-state=done]::after{transform:scale(1)}
+.dl[data-state=done] .di-idle{opacity:0; transform:scale(.4)}
+.dl[data-state=done] .di-chk{opacity:1; transform:none}
+
+/* search */
+.sfield{display:flex; align-items:center; gap:10px; height:54px; padding:0 18px; border-radius:27px; margin-bottom:18px}
+.sfield svg{width:22px; height:22px; color:var(--text-2); flex:none}
+.sfield input{flex:1; min-width:0; background:none; border:0; outline:0; color:var(--text); font:600 16px var(--font-ui)}
+.sfield input::placeholder{color:var(--text-3)}
+.chips{display:flex; gap:8px; flex-wrap:wrap}
+.chip{height:34px; padding:0 14px; border-radius:17px; font-size:13px; font-weight:600; color:var(--text-2); display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:rgba(255,255,255,.03)}
+.chip[aria-pressed=true]{color:var(--on-glow,#0a0a0e); background:linear-gradient(160deg, color-mix(in oklab,var(--c1) 55%, #fff), var(--c1)); border-color:transparent}
+.genres{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.genre{position:relative; border-radius:28px; overflow:hidden; padding:16px; display:flex; align-items:flex-end; cursor:pointer; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.genre b{position:relative; font:600 27px/1 var(--font-display); font-style:italic}
+.genre::before{content:""; position:absolute; inset:-30%; background:var(--g); animation:spin 60s linear infinite}
+.empty{padding:40px 20px; text-align:center; color:var(--text-2); font-size:14px}
+.empty b{display:block; font:600 24px var(--font-display); font-style:italic; color:var(--text); margin-bottom:6px}
+
+/* library */
+.seg{position:relative; display:grid; grid-template-columns:repeat(3,1fr); height:46px; border-radius:23px; padding:4px; margin-bottom:22px}
+.seg button{position:relative; z-index:2; font-size:13px; font-weight:700; color:var(--text-2); transition:color .3s}
+.seg button.on{color:var(--text)}
+.ind{position:absolute; z-index:1; top:4px; bottom:4px; left:0; border-radius:99px; background:linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.08)); box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 4px 14px -4px rgba(0,0,0,.6), 0 0 22px -6px color-mix(in oklab,var(--c1) 70%, transparent); will-change:transform,width}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px 14px}
+.pcard{display:grid; gap:10px; cursor:pointer; text-align:left}
+.stack{position:relative; aspect-ratio:1; border-radius:28px; background:rgba(255,255,255,.04); overflow:hidden; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.stack img{position:absolute; width:62%; aspect-ratio:1; border-radius:18px; object-fit:cover; box-shadow:0 10px 24px -8px rgba(0,0,0,.8)}
+.stack img:nth-child(1){left:7%; top:9%; transform:rotate(-9deg)}
+.stack img:nth-child(2){left:30%; top:22%; transform:rotate(6deg)}
+.stack img:nth-child(3){left:14%; top:44%; transform:rotate(-2deg)}
+.pcard b{display:block; font-weight:700; font-size:14.5px}
+.pcard span{display:block; font-size:12.5px; color:var(--text-2); margin-top:2px}
+.meter{border-radius:28px; padding:18px; display:grid; gap:14px; margin-bottom:18px}
+.meter .mt{display:flex; justify-content:space-between; align-items:baseline}
+.meter .mt b{font:600 34px/1 var(--font-display)}
+.meter .mt span{font:500 11px var(--font-mono); color:var(--text-3); letter-spacing:.06em}
+.bar{display:flex; gap:3px; height:10px}
+.bar i{display:block; height:100%; border-radius:5px; min-width:6px; transition:flex-grow .8s var(--ease-out)}
+.bar i.rest{background:rgba(255,255,255,.08); flex:1}
+.legend{display:flex; gap:14px; flex-wrap:wrap; font:500 10.5px var(--font-mono); color:var(--text-2)}
+.legend i{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px}
+
+/* tab bar + mini */
+.tabbar{position:absolute; left:16px; top:754px; width:358px; height:64px; border-radius:32px; z-index:30; padding:4px; display:grid; grid-template-columns:repeat(3,1fr)}
+.tab{position:relative; z-index:2; display:grid; place-items:center; align-content:center; gap:3px; border-radius:28px; color:var(--text-3); transition:color .35s}
+.tab svg{width:23px; height:23px; transition:transform .55s var(--ease-spring)}
+.tab span{font-size:10.5px; font-weight:700; letter-spacing:.01em}
+.tab.on{color:var(--text)}
+.tab.on svg{transform:translateY(-1px) scale(1.08)}
+.mini{position:absolute; left:16px; top:678px; width:358px; height:66px; border-radius:33px; z-index:30; display:flex; align-items:center; gap:12px; padding:0 14px 0 66px; cursor:pointer; touch-action:none}
+.mi-in{display:flex; align-items:center; gap:12px; flex:1; min-width:0}
+.mi-text{flex:1; min-width:0}
+.mi-t{font-weight:700; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.mi-a{font-size:12.5px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px}
+.mi-btn{width:44px; height:44px; border-radius:50%; display:grid; place-items:center; position:relative; background:rgba(255,255,255,.1); box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+.mi-btn svg{width:22px; height:22px}
+.pp{position:relative; display:grid; place-items:center; width:100%; height:100%}
+.pp .a,.pp .b{position:absolute; display:grid; place-items:center; transition:opacity .25s, transform .5s var(--ease-spring)}
+.pp .b{opacity:0; transform:scale(.5) rotate(-40deg)}
+.is-playing .pp .a{opacity:0; transform:scale(.5) rotate(40deg)}
+.is-playing .pp .b{opacity:1; transform:none}
+.mi-prog{position:absolute; left:34px; right:34px; bottom:0; height:2px; border-radius:2px; background:rgba(255,255,255,.1); overflow:hidden}
+.mi-prog b{display:block; height:100%; width:100%; transform-origin:0 50%; transform:scaleX(0); background:var(--c1); box-shadow:0 0 10px var(--c1)}
+
+/* cover */
+.cover{position:absolute; left:0; top:0; width:328px; height:328px; transform-origin:0 0; z-index:45; pointer-events:none; will-change:transform;
+  box-shadow:0 34px 70px -24px color-mix(in oklab,var(--c1) calc(var(--p)*75%), transparent), 0 0 0 1px rgba(255,255,255,.1)}
+.cv-in{position:absolute; inset:0; border-radius:inherit; overflow:hidden; transform:perspective(900px) rotateX(calc((var(--ly) - .5)*-5deg)) rotateY(calc((var(--lx) - .5)*7deg)); background:var(--ink-800)}
+.cv-in img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block}
+.cv-in::after{content:""; position:absolute; inset:0; background:linear-gradient(112deg, transparent 32%, rgba(255,255,255,.2) 47%, transparent 62%); background-size:260% 100%; background-position:calc(var(--lx)*100%) 0; mix-blend-mode:screen; opacity:calc(var(--p)*.9)}
+
+/* player */
+.player{position:absolute; inset:0; z-index:40; visibility:hidden; clip-path:inset(678px 16px 100px 16px round 33px)}
+.pl-bg{position:absolute; inset:0; background:linear-gradient(180deg, color-mix(in oklab,var(--c3) 70%, var(--ink-950)), var(--ink-950) 82%); opacity:0}
+.pl-bg .aurora{--ao:1}
+.pl-bg .aurora i:nth-child(1){left:-45%; top:-14%}
+.pl-bg .aurora i:nth-child(2){left:-70%; top:-6%}
+.pl-bg::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent 52%, rgba(4,4,6,.62) 88%)}
+.pl-drag{position:absolute; left:0; right:0; top:44px; height:430px; z-index:1; touch-action:none}
+.rise{position:absolute; z-index:3; will-change:transform,opacity}
+.topbar{left:20px; right:20px; top:52px; height:44px; display:flex; align-items:center; justify-content:space-between}
+.topbar .mid{text-align:center; display:grid; gap:5px; min-width:0}
+.topbar .mid .eyebrow{color:var(--text-2)}
+.topbar .mid b{font:600 17px/1 var(--font-display); font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:190px}
+.tbox{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; transform-origin:0 0}
+.pl-title{margin:0; font:600 35px/1 var(--font-display); letter-spacing:-.012em; text-wrap:balance}
+.pl-artist{margin:8px 0 0; font-size:15.5px; color:var(--text-2); font-weight:600}
+.heart{width:48px; height:48px; border-radius:50%; display:grid; place-items:center; flex:none; margin-top:-2px; color:var(--text-2); transition:color .3s, transform .55s var(--ease-spring)}
+.heart svg{width:26px; height:26px; transition:fill .3s}
+.heart.on{color:var(--c1)}
+.heart.on svg{fill:var(--c1)}
+.wave{left:31px; width:328px; top:548px; height:48px; cursor:pointer; touch-action:none}
+.wave canvas{width:328px; height:48px; display:block}
+.bubble{position:absolute; top:-40px; left:0; padding:5px 10px; border-radius:12px; font:500 11px var(--font-mono); opacity:0; transform:translateX(-50%) translateY(6px) scale(.9); transition:opacity .2s, transform .35s var(--ease-spring); pointer-events:none}
+.bubble.on{opacity:1; transform:translateX(-50%) translateY(0) scale(1)}
+.times{left:31px; width:328px; top:604px; display:flex; align-items:center; justify-content:space-between; font:500 11.5px var(--font-mono); color:var(--text-2); font-variant-numeric:tabular-nums}
+.badge{display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border-radius:99px; font:500 10.5px/1 var(--font-mono); letter-spacing:.07em; text-transform:uppercase; color:var(--text)}
+.badge::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--c1); box-shadow:0 0 10px 1px var(--c1)}
+.ctrls{left:31px; width:328px; top:640px; height:76px; display:flex; align-items:center; justify-content:space-between}
+.cb{width:52px; height:52px; border-radius:50%; display:grid; place-items:center; color:var(--text)}
+.cb svg{width:27px; height:27px}
+.cb.sm{width:44px; height:44px; color:var(--text-2)}
+.cb.sm svg{width:22px; height:22px}
+.cb.sm.on{color:var(--c1)}
+.bigplay{width:76px; height:76px; border-radius:50%; display:grid; place-items:center; color:var(--on-glow,#0a0a0e);
+  background:linear-gradient(160deg, color-mix(in oklab,var(--c1) 50%, #fff), var(--c1) 70%);
+  box-shadow:0 14px 44px -8px color-mix(in oklab,var(--c1) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.7), inset 0 -10px 18px -8px rgba(0,0,0,.3)}
+.bigplay svg{width:34px; height:34px}
+.toolbar{left:31px; width:328px; top:736px; height:56px; border-radius:28px; display:grid; grid-template-columns:repeat(3,1fr); padding:4px}
+.tb{position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:7px; border-radius:24px; font-size:12.5px; font-weight:700; color:var(--text-2); transition:color .3s, background .3s}
+.tb svg{width:21px; height:21px}
+.tb.on{color:var(--text); background:rgba(255,255,255,.1)}
+.tb .dl{width:30px; height:30px}
+.tb .dl svg.ring{inset:1px; width:28px; height:28px}
+.tb .dl .di svg{width:19px; height:19px}
+.lyrics{position:absolute; left:0; right:0; top:184px; height:352px; z-index:3; overflow:hidden; opacity:0; pointer-events:none;
+  -webkit-mask-image:linear-gradient(transparent, #000 14%, #000 84%, transparent); mask-image:linear-gradient(transparent, #000 14%, #000 84%, transparent)}
+.ly-in{padding:0 31px; transition:transform calc(.8s*var(--tm)) var(--ease-out)}
+.ly{margin:0 0 18px; font:600 31px/1.12 var(--font-display); letter-spacing:-.008em; transform-origin:0 50%; cursor:pointer; transition:opacity calc(.6s*var(--tm)) var(--ease-out), filter calc(.6s*var(--tm)) var(--ease-out), transform calc(.7s*var(--tm)) var(--ease-out); text-wrap:balance}
+.queue{position:absolute; left:0; right:0; top:316px; bottom:0; z-index:5; border-radius:34px 34px 0 0; padding:10px 16px 0; display:flex; flex-direction:column; transform:translateY(560px)}
+.queue::before{border-radius:34px 34px 0 0}
+.q-handle{width:40px; height:4px; border-radius:2px; background:rgba(255,255,255,.3); margin:0 auto 14px}
+.q-head{display:flex; justify-content:space-between; align-items:center; padding:0 6px 8px}
+.q-head h3{margin:0; font:600 26px/1 var(--font-display); font-style:italic}
+.q-list{flex:1; overflow-y:auto; margin:0 -8px; padding-bottom:70px; scrollbar-width:none}
+.q-list::-webkit-scrollbar{display:none}
+
+.toast{position:absolute; left:50%; top:58px; z-index:80; padding:11px 16px 11px 12px; border-radius:22px; display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; white-space:nowrap; opacity:0; pointer-events:none; max-width:350px}
+.toast img{width:26px; height:26px; border-radius:8px}
+.toast span{font:500 10.5px var(--font-mono); color:var(--text-2); letter-spacing:.04em}
+
+@media (max-width:1040px){
+  .stage{grid-template-columns:1fr; justify-items:center}
+  .side{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .grain,.aurora i,.hero .hb,.genre::before{animation:none}
+  .in{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <aside class="side left" aria-label="Настройки прототипа">
+    <div class="brand">
+      <div class="eyebrow">Прототип · Android · Compose</div>
+      <h1>Cloudly</h1>
+      <p>Тёмное дымчатое стекло. Свет приходит только из обложки.</p>
+    </div>
+    <section class="panel">
+      <h2 class="eyebrow">Материал</h2>
+      <div class="ctl"><label for="rGrain">Зерно <output id="oGrain">50%</output></label><input id="rGrain" type="range" min="0" max="100" value="50"></div>
+      <div class="ctl"><label for="rBlur">Матовость стекла <output id="oBlur">20 dp</output></label><input id="rBlur" type="range" min="0" max="48" value="20"></div>
+      <div class="ctl"><label for="rAur">Свечение обложки <output id="oAur">100%</output></label><input id="rAur" type="range" min="0" max="140" value="100"></div>
+      <label class="chk" for="cLens"><input id="cLens" type="checkbox" checked> Рефракция на краю стекла</label>
+    </section>
+    <section class="panel">
+      <h2 class="eyebrow">Время</h2>
+      <div class="ctl"><label for="rSpd">Скорость анимаций <output id="oSpd">1×</output></label><input id="rSpd" type="range" min="25" max="200" value="100"></div>
+      <button class="pill" id="bSlow" aria-pressed="false">Замедлить до 0,25×</button>
+    </section>
+    <section class="panel">
+      <h2 class="eyebrow">Попробуйте</h2>
+      <ul class="tips">
+        <li>Потяните мини-плеер вверх и отпустите на полпути.</li>
+        <li>Проведите пальцем по волне, чтобы перемотать.</li>
+        <li>Нажмите «Текст», потом «Очередь».</li>
+        <li>Нажмите «Скачать» и следите за кольцом.</li>
+        <li>Двигайте курсор по телефону: свет на гранях следует за ним.</li>
+      </ul>
+    </section>
+  </aside>
+
+  <div class="slot" id="slot">
+    <div class="phone" id="phone">
+      <div class="bg"><div class="aurora"><i></i><i></i></div></div>
+
+      <div class="screens" id="screens">
+        <section class="screen on" id="home" data-screen="home" aria-label="Главная"></section>
+        <section class="screen" id="search" data-screen="search" aria-label="Поиск">
+          <header class="hdr"><div><div class="eyebrow">Каталог без сжатия</div><h1 class="display">Найти</h1></div></header>
+          <label class="sfield glass" for="q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><input id="q" type="search" placeholder="Треки, артисты, альбомы" autocomplete="off"></label>
+          <div class="chips" id="schips"></div>
+          <div id="sbody"></div>
+        </section>
+        <section class="screen" id="library" data-screen="library" aria-label="Медиатека">
+          <header class="hdr"><div><div class="eyebrow">Всё ваше</div><h1 class="display">Медиатека</h1></div></header>
+          <div class="seg glass" id="seg"><i class="ind" id="segInd"></i>
+            <button class="on" data-act="lib" data-lib="playlists">Плейлисты</button>
+            <button data-act="lib" data-lib="albums">Альбомы</button>
+            <button data-act="lib" data-lib="downloads">Скачано</button>
+          </div>
+          <div id="libBody"></div>
+        </section>
+      </div>
+      <div class="shade" id="shade"></div>
+      <div class="dockfade" id="dockfade"></div>
+
+      <nav class="tabbar glass" id="tabbar" aria-label="Разделы">
+        <i class="ind" id="tabInd"></i>
+        <button class="tab on" data-act="tab" data-tab="home" aria-label="Главная"></button>
+        <button class="tab" data-act="tab" data-tab="search" aria-label="Поиск"></button>
+        <button class="tab" data-act="tab" data-tab="library" aria-label="Медиатека"></button>
+      </nav>
+
+      <div class="mini glass" id="mini" role="button" aria-label="Открыть плеер" tabindex="0">
+        <div class="mi-in" id="miIn">
+          <div class="mi-text"><div class="mi-t" id="miTitle"></div><div class="mi-a" id="miArtist"></div></div>
+          <button class="mi-btn press" data-act="toggle" data-nodrag aria-label="Играть или пауза"><span class="pp"><span class="a" id="miPlay"></span><span class="b" id="miPause"></span></span></button>
+        </div>
+        <i class="mi-prog"><b id="miBar"></b></i>
+      </div>
+
+      <section class="player" id="player" aria-label="Плеер">
+        <div class="pl-bg" id="plBg"><div class="aurora"><i></i><i></i></div></div>
+        <div class="pl-drag" id="plDrag"></div>
+
+        <div class="rise topbar" data-rise="0">
+          <button class="gbtn glass press" data-act="close" data-nodrag aria-label="Свернуть плеер" id="bClose"></button>
+          <div class="mid"><span class="eyebrow">Из альбома</span><b id="plAlbum"></b></div>
+          <button class="gbtn glass press" data-act="more" data-nodrag aria-label="Ещё" id="bMore"></button>
+        </div>
+
+        <div class="rise" data-rise="1" style="left:31px; top:466px; width:328px">
+          <div class="tbox" id="tbox">
+            <div style="min-width:0"><h2 class="pl-title" id="plTitle"></h2><p class="pl-artist" id="plArtist"></p></div>
+            <button class="heart press" data-act="like" data-nodrag id="bLike" aria-label="В избранное"></button>
+          </div>
+        </div>
+
+        <div class="rise wave" data-rise="2" id="wave" data-nodrag>
+          <canvas id="wvc"></canvas>
+          <div class="bubble glass mono" id="bubble">0:00</div>
+        </div>
+
+        <div class="rise times" data-rise="3">
+          <span id="tEl">0:00</span>
+          <button class="badge glass press" id="bBadge" data-act="quality" data-nodrag aria-label="Качество потока"></button>
+          <span id="tRem">-0:00</span>
+        </div>
+
+        <div class="rise ctrls" data-rise="4">
+          <button class="cb sm press" data-act="shuffle" data-nodrag id="bShuf" aria-label="Перемешать"></button>
+          <button class="cb press" data-act="prev" data-nodrag id="bPrev" aria-label="Предыдущий"></button>
+          <button class="bigplay press" data-act="toggle" data-nodrag aria-label="Играть или пауза"><span class="pp"><span class="a" id="bgPlay"></span><span class="b" id="bgPause"></span></span></button>
+          <button class="cb press" data-act="next" data-nodrag id="bNext" aria-label="Следующий"></button>
+          <button class="cb sm press" data-act="repeat" data-nodrag id="bRep" aria-label="Повтор"></button>
+        </div>
+
+        <div class="rise toolbar glass" data-rise="5" id="toolbar">
+          <i class="ind" id="tbInd" style="opacity:0"></i>
+          <button class="tb press" data-act="lyrics" data-nodrag id="tbLy"></button>
+          <div class="tb"><span id="tbDlSlot"></span></div>
+          <button class="tb press" data-act="queue" data-nodrag id="tbQ"></button>
+        </div>
+
+        <div class="lyrics" id="lyrics"><div class="ly-in" id="lyIn"></div></div>
+
+        <div class="queue glass" id="queue">
+          <div class="q-handle"></div>
+          <div class="q-head"><h3>Далее</h3><button class="gbtn press" data-act="qclose" style="width:38px;height:38px;background:rgba(255,255,255,.08)" id="bQClose" aria-label="Закрыть очередь"></button></div>
+          <div class="q-list rows" id="qList"></div>
+        </div>
+      </section>
+
+      <div class="cover" id="cover"><div class="cv-in" id="cvIn"></div></div>
+
+      <div class="sbfade"></div>
+      <div class="sb"><span id="clock">21:41</span>
+        <span class="ic">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="4.5" y="5.5" width="3" height="6.5" rx="1"/><rect x="9" y="3" width="3" height="9" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 4.2a9.5 9.5 0 0 1 13 0M3.7 6.7a6.2 6.2 0 0 1 8.6 0M6 9.1a3 3 0 0 1 4 0"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".6" y=".6" width="21" height="10.8" rx="3.2" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="15" height="8" rx="2" fill="currentColor"/><rect x="22.6" y="4" width="1.6" height="4" rx=".8" fill="currentColor" opacity=".5"/></svg>
+        </span>
+      </div>
+      <div class="hole"></div>
+      <div class="toast glass" id="toast"></div>
+      <div class="vig"></div>
+      <div class="grain" id="grain"></div>
+      <div class="gest"></div>
+    </div>
+  </div>
+
+  <aside class="side right" aria-label="Токены">
+    <section class="panel" style="border-top:0; padding-top:0">
+      <h2 class="eyebrow">Палитра из обложки</h2>
+      <div class="sw" id="sw"></div>
+      <p style="margin:0; font-size:12px; color:var(--text-3)">Три цвета берутся из квантования обложки и приводятся к тону, пригодному для тёмного интерфейса.</p>
+    </section>
+    <section class="panel">
+      <h2 class="eyebrow">Пружины</h2>
+      <div id="springs" style="display:grid; gap:16px"></div>
+    </section>
+    <section class="panel">
+      <h2 class="eyebrow">Сейчас играет</h2>
+      <div class="np" id="np"></div>
+    </section>
+  </aside>
+</div>
+<div id="lensDefs" style="position:absolute; width:0; height:0; overflow:hidden" aria-hidden="true"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const fmt = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const EASE = 'cubic-bezier(.22,1,.36,1)';
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const stage = $('#stage'), slot = $('#slot'), phone = $('#phone');
+const S = { speed: 1, grain: .5, blur: 20, aurora: 1, lens: true };
+const TM = () => 1 / S.speed;
+let SC = 1;
+
+/* ---------- icons ---------- */
+const I = (p, w = 1.7) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ICON = {
+  home: I('<path d="M4 11.2 12 4l8 7.2V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/>'),
+  search: I('<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/>'),
+  lib: I('<path d="M5 5v14M10 5v14"/><rect x="14" y="5" width="5.5" height="14" rx="1.2" transform="rotate(-12 16.7 12)"/>'),
+  play: I('<path d="M8.5 5.8v12.4L18.6 12z" fill="currentColor" stroke-width="2.2"/>'),
+  pause: I('<rect x="6.5" y="5" width="3.8" height="14" rx="1.4" fill="currentColor" stroke="none"/><rect x="13.7" y="5" width="3.8" height="14" rx="1.4" fill="currentColor" stroke="none"/>'),
+  next: I('<path d="M6 6.8v10.4L14 12z" fill="currentColor" stroke-width="2"/><path d="M17.6 6.2v11.6"/>'),
+  prev: I('<path d="M18 6.8v10.4L10 12z" fill="currentColor" stroke-width="2"/><path d="M6.4 6.2v11.6"/>'),
+  shuffle: I('<path d="M4 7h3.2c3.6 0 5 10 8.6 10H20M4 17h3.2c1.6 0 2.7-2 3.6-4M20 7h-4.2c-1.5 0-2.5 1.5-3.4 3.2"/><path d="m18 4.8 2.2 2.2L18 9.2M18 14.8l2.2 2.2L18 19.2"/>'),
+  repeat: I('<path d="M5 11V9.5A2.5 2.5 0 0 1 7.5 7H19M19 7l-2.5-2.5M19 7l-2.5 2.5M19 13v1.5a2.5 2.5 0 0 1-2.5 2.5H5M5 17l2.5-2.5M5 17l2.5 2.5"/>'),
+  heart: I('<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/>'),
+  download: I('<path d="M12 4v11M7.5 10.8 12 15.3l4.5-4.5M5 19.5h14"/>'),
+  check: I('<path d="m5.5 12.8 4.2 4.2 8.8-9.5"/>', 2.2),
+  queue: I('<path d="M4 7h11M4 12h11M4 17h6"/><path d="m17 14.5 4 2.5-4 2.5z" fill="currentColor"/>'),
+  lyrics: I('<path d="M4 7h16M4 12h16M4 17h9"/>'),
+  down: I('<path d="m6 9.5 6 6 6-6"/>'),
+  more: I('<circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none"/>'),
+  sliders: I('<path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/>'),
+  plus: I('<path d="M12 5v14M5 12h14"/>')
+};
+
+/* ---------- data ---------- */
+const T = [
+  { id: 0, t: 'Слабый свет', a: 'Мира Ковач', al: 'Afterimage', dur: 222, fmt: 'FLAC', bits: '24/96', kbps: 3400, style: 'bloom', cov: ['#ff6a3d', '#8a1f5c', '#14071c'], genre: 'Дрим-поп',
+    lyr: ['Город гаснет по одному окну', 'Я держу твой свет в ладони', 'Слабый свет, слабый свет', 'Он дрожит, но не уходит', 'Пока ночь собирает шаги', 'Мы идём по краю тишины', 'Слабый свет, слабый свет', 'Останься до рассвета'] },
+  { id: 1, t: 'Low Tide Radio', a: 'Halden Reyes', al: 'Salt & Static', dur: 245, fmt: 'FLAC', bits: '16/44', kbps: 900, style: 'waves', cov: ['#2de2d0', '#0d5f86', '#041b27'], genre: 'Инди',
+    lyr: ['Signal fading with the tide', 'Static on the water line', 'Say my name in a slower voice', 'Let the salt erase the time', 'Low tide radio, keep me on', 'Till the morning, till it\'s gone', 'Every wave a lullaby', 'Every night a frequency'] },
+  { id: 2, t: 'Жидкий хром', a: 'Нико Арден', al: 'Chrome Hours', dur: 198, fmt: 'FLAC', bits: '24/48', kbps: 1900, style: 'orb', cov: ['#bcd0ff', '#4f5cff', '#0b0d2a'], genre: 'Электроника',
+    lyr: ['Хром течёт по стеклу витрин', 'Отражения тают в руках', 'Я ловлю твой холодный блеск', 'Он ускользает, как вода', 'Жидкий хром, жидкий хром', 'Мы с тобой — лишь свет и тень', 'Всё, что было, стало гладким', 'Всё, что будет, ждёт во тьме'] },
+  { id: 3, t: 'Violet Hour', a: 'Sunna', al: 'Dusk Protocol', dur: 231, fmt: 'FLAC', bits: '24/96', kbps: 3400, style: 'sun', cov: ['#ff3d8b', '#7b2cff', '#1b0638'], genre: 'Синтвейв',
+    lyr: ['The sky turns a shade of almost', 'Between the day and the lights', 'Hold the violet hour with me', 'Before the city says goodnight', 'Neon on your shoulder blade', 'Slow motion in the street', 'Hold the violet hour with me', 'Let it breathe, let it be'] },
+  { id: 4, t: 'Пепел и стекло', a: 'Лев Рихтер', al: 'Ash Glass', dur: 267, fmt: 'FLAC', bits: '16/44', kbps: 900, style: 'arch', cov: ['#f0c36e', '#b4572c', '#1c110a'], genre: 'Нео-классика',
+    lyr: ['Из пепла собираю стекло', 'Каждый осколок помнит огонь', 'Он звенит, когда я иду', 'Он смеётся над тем, что прошло', 'Пепел и стекло', 'Тишина и тепло', 'Всё, что сломано, светит ярче', 'Всё, что светит, однажды остынет'] },
+  { id: 5, t: 'Northbound', a: 'Odalys', al: 'Long Road', dur: 214, fmt: 'MP3', bits: '320', kbps: 320, style: 'grid', cov: ['#46e49c', '#0f6b5a', '#04140f'], genre: 'Лоу-фай',
+    lyr: ['Headlights drawing lines on the dark', 'Radio hum and the engine breath', 'Northbound, northbound', 'We don\'t need a map', 'Mile by mile the night unwinds', 'Whatever we leave behind', 'Northbound, northbound', 'Keep the window down'] },
+  { id: 6, t: 'Тихий шторм', a: 'Эмма Вольф', al: 'Low Pressure', dur: 189, fmt: 'FLAC', bits: '16/44', kbps: 900, style: 'stripes', cov: ['#ffb03a', '#d9481c', '#250b05'], genre: 'Инди',
+    lyr: ['Тихий шторм над крышами', 'Не гремит, но слышно всем', 'Он в дыхании, в тишине', 'Он в тебе и во мне', 'Тихий шторм, тихий шторм', 'Пусть пройдёт стороной', 'Или заберёт с собой', 'Я не буду бояться'] },
+  { id: 7, t: 'Moon Pool', a: 'Kairo', al: 'Undertow', dur: 256, fmt: 'FLAC', bits: '24/96', kbps: 3400, style: 'moon', cov: ['#b9a8ff', '#4a35b8', '#0a0922'], genre: 'Эмбиент',
+    lyr: ['Moon pool, silver and slow', 'Drop a stone and watch it glow', 'Every ripple holds a star', 'Every star knows who you are', 'Float with me, float with me', 'Where the water meets the sky', 'Moon pool, never let me go', 'Quiet as the undertow'] }
+];
+T.forEach(t => { t.hi = t.bits.startsWith('24'); t.q = t.fmt + ' ' + t.bits; t.mb = t.dur * t.kbps / 8 / 1024; });
+const PLAYLISTS = [
+  { n: 'Ночной город', ids: [0, 3, 7, 2] }, { n: 'Дорога', ids: [5, 1, 6] },
+  { n: 'Фокус', ids: [2, 4, 7, 1] }, { n: 'Любимое', ids: [0, 4, 3, 5] }
+];
+const MOODS = [
+  { n: 'Ночь', c: ['#5b3bff', '#12092e'], k: 24 }, { n: 'Дождь', c: ['#2fb6d9', '#08202c'], k: 18 },
+  { n: 'Фокус', c: ['#ffb03a', '#2a1306'], k: 31 }, { n: 'Дорога', c: ['#46e49c', '#06201a'], k: 27 }
+];
+const GENRES = [
+  { n: 'Эмбиент', c: ['#3a6cff', '#0a1233'], h: 130 }, { n: 'Электроника', c: ['#ff3d8b', '#2a0a3a'], h: 100 },
+  { n: 'Инди', c: ['#ffb03a', '#2a1306'], h: 100 }, { n: 'Нео-классика', c: ['#f0c36e', '#2a150a'], h: 130 },
+  { n: 'Лоу-фай', c: ['#46e49c', '#06201a'], h: 130 }, { n: 'Дрим-поп', c: ['#ff6a3d', '#2a0a1e'], h: 100 }
+];
+
+const st = { cur: 0, playing: true, t: 62, liked: new Set([0, 3]), dl: {}, tab: 'home', lib: 'playlists', filter: 'all', q: '', shuf: false, rep: false };
+[0, 1, 4].forEach(i => st.dl[i] = { state: 'done', prog: 1 });
+const cur = () => T[st.cur];
+
+/* ---------- springs (same numbers as Compose spring(dampingRatio, stiffness)) ---------- */
+const SP = {
+  glide: { k: 400, z: .85, name: 'Glide', use: 'интерфейс, появление, переключение', code: 'spring(0.85f, 400f)' },
+  float: { k: 150, z: .8, name: 'Sheet', use: 'шторка плеера, обложка', code: 'spring(0.80f, 150f)' },
+  snap: { k: 1500, z: .6, name: 'Snap', use: 'нажатия, иконки', code: 'spring(0.60f, 1500f)' },
+  liquid: { k: 300, z: .55, name: 'Liquid', use: 'индикаторы, ползунки', code: 'spring(0.55f, 300f)' }
+};
+const springs = new Set();
+class Spring {
+  constructor(x, cfg, on) { this.x = x; this.v = 0; this.t = x; this.k = cfg.k; this.z = cfg.z; this.on = on; this.active = false; }
+  to(t, v) { this.t = t; if (v !== undefined) this.v = v; if (!this.active) { this.active = true; springs.add(this); } }
+  jump(x) { this.x = x; this.t = x; this.v = 0; this.active = false; springs.delete(this); this.on(x); }
+  hold() { this.active = false; springs.delete(this); this.v = 0; }
+  step(dt) {
+    if (reduce) { this.x = this.t; this.v = 0; }
+    else {
+      const c = 2 * this.z * Math.sqrt(this.k), n = Math.max(1, Math.ceil(dt / .004)), h = dt / n;
+      for (let i = 0; i < n; i++) { this.v += (-this.k * (this.x - this.t) - c * this.v) * h; this.x += this.v * h; }
+    }
+    this.on(this.x);
+    if (Math.abs(this.v) < .0004 && Math.abs(this.x - this.t) < .0004) { this.x = this.t; this.v = 0; this.on(this.x); this.active = false; springs.delete(this); }
+  }
+}
+
+/* ---------- colour ---------- */
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+const R = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const RGB = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+const WHITE = [255, 255, 255], BLACK = [0, 0, 0];
+function rgb2hsl([r, g, b]) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let h = 0, s = 0; if (mx !== mn) { const d = mx - mn; s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; } return [h, s, l]; }
+function hsl2rgb([h, s, l]) { h = ((h % 360) + 360) % 360; const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2; let r = 0, g = 0, b = 0; if (h < 60) [r, g, b] = [c, x, 0]; else if (h < 120) [r, g, b] = [x, c, 0]; else if (h < 180) [r, g, b] = [0, c, x]; else if (h < 240) [r, g, b] = [0, x, c]; else if (h < 300) [r, g, b] = [x, 0, c]; else [r, g, b] = [c, 0, x]; return [(r + m) * 255, (g + m) * 255, (b + m) * 255]; }
+const hex = c => '#' + c.map(v => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0')).join('');
+
+function extractPalette(cv, fallback) {
+  try {
+    const o = document.createElement('canvas'); o.width = o.height = 40;
+    const g = o.getContext('2d', { willReadFrequently: true }); g.drawImage(cv, 0, 0, 40, 40);
+    const d = g.getImageData(0, 0, 40, 40).data, bins = Array.from({ length: 18 }, () => ({ w: 0, r: 0, g: 0, b: 0 }));
+    for (let i = 0; i < d.length; i += 4) {
+      const c = [d[i], d[i + 1], d[i + 2]], [h, s, l] = rgb2hsl(c);
+      if (s < .2 || l < .12 || l > .92) continue;
+      const w = Math.pow(s, 1.2) * Math.max(0, 1 - Math.abs(l - .55) * 1.7), b = bins[Math.floor(h / 20) % 18];
+      b.w += w; b.r += c[0] * w; b.g += c[1] * w; b.b += c[2] * w;
+    }
+    const ord = bins.map((b, i) => ({ ...b, i })).filter(b => b.w > 0).sort((a, b) => b.w - a.w);
+    if (!ord.length) throw 0;
+    const avg = b => [b.r / b.w, b.g / b.w, b.b / b.w];
+    let c1 = rgb2hsl(avg(ord[0]));
+    const hd = (a, b) => { const x = Math.abs(a - b) % 360; return Math.min(x, 360 - x); };
+    const o2 = ord.find(b => hd(b.i * 20 + 10, ord[0].i * 20 + 10) >= 50);
+    let c2 = o2 ? rgb2hsl(avg(o2)) : [c1[0] + 38, c1[1], c1[2]];
+    c1 = [c1[0], clamp(c1[1], .62, .95), clamp(c1[2], .56, .68)];
+    c2 = [c2[0], clamp(c2[1], .5, .9), clamp(c2[2], .34, .5)];
+    const c3 = [c1[0], .5, .1];
+    return [hsl2rgb(c1), hsl2rgb(c2), hsl2rgb(c3)];
+  } catch (e) { return fallback.map(rgb); }
+}
+
+/* ---------- procedural covers ---------- */
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const layer = (s, fn) => { const c = document.createElement('canvas'); c.width = c.height = s; fn(c.getContext('2d')); return c; };
+const radial = (g, s, x, y, r, col, a) => { const gr = g.createRadialGradient(x * s, y * s, 0, x * s, y * s, r * s); gr.addColorStop(0, R(col, a)); gr.addColorStop(1, R(col, 0)); g.fillStyle = gr; g.fillRect(0, 0, s, s); };
+const STYLES = {
+  bloom(g, s, A, B, C) {
+    g.fillStyle = R(C); g.fillRect(0, 0, s, s);
+    radial(g, s, .28, .72, .78, A, .95); radial(g, s, .78, .26, .64, B, .92); radial(g, s, .62, .92, .5, mixc(A, WHITE, .3), .55); radial(g, s, .18, .14, .46, B, .6);
+    g.strokeStyle = 'rgba(255,255,255,.34)'; g.lineWidth = s * .004; g.beginPath(); g.arc(.5 * s, .46 * s, .3 * s, 0, 7); g.stroke();
+    g.beginPath(); g.arc(.5 * s, .46 * s, .21 * s, 0, 7); g.strokeStyle = 'rgba(255,255,255,.16)'; g.stroke();
+  },
+  waves(g, s, A, B, C) {
+    const gr = g.createLinearGradient(0, 0, 0, s); gr.addColorStop(0, R(mixc(C, B, .35))); gr.addColorStop(.6, R(B)); gr.addColorStop(1, R(C)); g.fillStyle = gr; g.fillRect(0, 0, s, s);
+    radial(g, s, .5, .3, .5, A, .85);
+    for (let i = 0; i < 9; i++) {
+      const y0 = s * (.36 + i * .075), amp = s * (.03 + i * .004), f = 1.6 + i * .3, ph = i * 1.4, t = i / 8;
+      const crest = close => { g.beginPath(); for (let x = -4; x <= s + 4; x += 6) { const y = y0 + Math.sin(x / s * Math.PI * f + ph) * amp; x === -4 ? g.moveTo(x, y) : g.lineTo(x, y); } if (close) { g.lineTo(s + 4, s + 4); g.lineTo(-4, s + 4); g.closePath(); } };
+      crest(true); g.fillStyle = R(mixc(mixc(B, A, .25), C, t * .92), .93); g.fill();
+      crest(false); g.strokeStyle = R(mixc(A, WHITE, .4), .55 * (1 - t)); g.lineWidth = s * .003; g.stroke();
+    }
+  },
+  orb(g, s, A, B, C) {
+    const bg = g.createRadialGradient(s * .5, s * .42, 0, s * .5, s * .5, s * .78); bg.addColorStop(0, R(mixc(C, B, .5))); bg.addColorStop(1, R(mixc(C, BLACK, .45))); g.fillStyle = bg; g.fillRect(0, 0, s, s);
+    const cx = s * .5, cy = s * .46, r = s * .245;
+    const ring = (a0, a1, w, al) => { g.save(); g.translate(cx, cy); g.rotate(-.38); g.beginPath(); g.ellipse(0, 0, r * 1.78, r * .52, 0, a0, a1); const lg = g.createLinearGradient(-r * 1.78, 0, r * 1.78, 0); lg.addColorStop(0, R(B, 0)); lg.addColorStop(.5, R(mixc(A, WHITE, .35), al)); lg.addColorStop(1, R(B, 0)); g.strokeStyle = lg; g.lineWidth = w; g.stroke(); g.restore(); };
+    ring(Math.PI, Math.PI * 2, s * .012, .75);
+    g.save(); g.translate(cx, s * .84); g.scale(1, .2); const sh = g.createRadialGradient(0, 0, 0, 0, 0, s * .3); sh.addColorStop(0, 'rgba(0,0,0,.6)'); sh.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = sh; g.fillRect(-s, -s, 2 * s, 2 * s); g.restore();
+    const sp = g.createRadialGradient(cx - r * .38, cy - r * .42, r * .04, cx, cy, r * 1.05);
+    sp.addColorStop(0, R(mixc(A, WHITE, .85))); sp.addColorStop(.25, R(A)); sp.addColorStop(.7, R(mixc(B, C, .3))); sp.addColorStop(1, R(mixc(C, BLACK, .3)));
+    g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fillStyle = sp; g.fill(); g.strokeStyle = 'rgba(255,255,255,.22)'; g.lineWidth = s * .004; g.stroke();
+    ring(0, Math.PI, s * .014, .95);
+  },
+  sun(g, s, A, B, C) {
+    const bg = g.createLinearGradient(0, 0, 0, s); bg.addColorStop(0, R(C)); bg.addColorStop(.62, R(mixc(B, C, .35))); bg.addColorStop(1, R(mixc(C, BLACK, .5))); g.fillStyle = bg; g.fillRect(0, 0, s, s);
+    const cx = s * .5, cy = s * .48, r = s * .27;
+    const gl = g.createRadialGradient(cx, cy, r * .6, cx, cy, r * 2.3); gl.addColorStop(0, R(A, .4)); gl.addColorStop(1, R(A, 0)); g.fillStyle = gl; g.fillRect(0, 0, s, s);
+    const disc = layer(s, k => { const sg = k.createLinearGradient(0, cy - r, 0, cy + r); sg.addColorStop(0, R(mixc(A, WHITE, .4))); sg.addColorStop(.55, R(A)); sg.addColorStop(1, R(B)); k.fillStyle = sg; k.beginPath(); k.arc(cx, cy, r, 0, 7); k.fill(); k.globalCompositeOperation = 'destination-out'; for (let i = 0; i < 7; i++) k.fillRect(0, cy + r * (.02 + i * .15), s, s * (.004 + i * .0068)); });
+    g.drawImage(disc, 0, 0);
+    const hy = s * .76; g.fillStyle = R(mixc(C, BLACK, .6), .92); g.fillRect(0, hy, s, s - hy);
+    for (let i = 0; i < 6; i++) { g.fillStyle = R(A, .5 - i * .08); g.fillRect(s * (.5 - .22 + i * .02), hy + s * (.012 + i * .028), s * (.44 - i * .04), s * .004); }
+  },
+  arch(g, s, A, B, C) {
+    const bg = g.createLinearGradient(0, 0, 0, s); bg.addColorStop(0, R(C)); bg.addColorStop(1, R(mixc(B, C, .55))); g.fillStyle = bg; g.fillRect(0, 0, s, s);
+    const base = s * .84;
+    for (let i = 0; i < 5; i++) {
+      const w = s * (.68 - i * .115), h = s * (.64 - i * .09), x = (s - w) / 2, y = base - h, r = w / 2;
+      g.beginPath(); g.moveTo(x, base); g.lineTo(x, y + r); g.arc(s / 2, y + r, r, Math.PI, 0); g.lineTo(x + w, base); g.closePath();
+      const lg = g.createLinearGradient(0, y, 0, base); lg.addColorStop(0, R(mixc(B, A, i / 4 * .8 + .1))); lg.addColorStop(1, R(mixc(C, B, .35)));
+      g.fillStyle = lg; g.fill(); g.strokeStyle = R(mixc(A, WHITE, .3), .28); g.lineWidth = s * .003; g.stroke();
+    }
+    radial(g, s, .5, .72, .22, mixc(A, WHITE, .4), .55);
+    g.fillStyle = R(mixc(C, BLACK, .6)); g.fillRect(0, base, s, s - base);
+  },
+  grid(g, s, A, B, C) {
+    const hz = s * .56, sky = g.createLinearGradient(0, 0, 0, hz); sky.addColorStop(0, R(C)); sky.addColorStop(1, R(mixc(B, A, .35))); g.fillStyle = sky; g.fillRect(0, 0, s, hz);
+    g.save(); g.beginPath(); g.rect(0, 0, s, hz); g.clip(); const sg = g.createLinearGradient(0, hz - s * .2, 0, hz); sg.addColorStop(0, R(mixc(A, WHITE, .35))); sg.addColorStop(1, R(A)); g.fillStyle = sg; g.beginPath(); g.arc(s / 2, hz, s * .21, 0, 7); g.fill(); g.restore();
+    g.fillStyle = R(mixc(C, BLACK, .5)); g.fillRect(0, hz, s, s - hz);
+    g.strokeStyle = R(A, .6); g.lineWidth = s * .003;
+    for (let k = 1; k <= 10; k++) { const y = hz + (s - hz) * Math.pow(k / 10, 2.1); g.beginPath(); g.moveTo(0, y); g.lineTo(s, y); g.stroke(); }
+    for (let k = -10; k <= 10; k++) { g.beginPath(); g.moveTo(s / 2 + k * s * .03, hz); g.lineTo(s / 2 + k * s * .21, s); g.stroke(); }
+    const fade = g.createLinearGradient(0, hz, 0, hz + s * .16); fade.addColorStop(0, R(mixc(C, BLACK, .5), 1)); fade.addColorStop(1, R(mixc(C, BLACK, .5), 0)); g.fillStyle = fade; g.fillRect(0, hz, s, s * .16);
+  },
+  stripes(g, s, A, B, C) {
+    g.fillStyle = R(C); g.fillRect(0, 0, s, s);
+    g.save(); g.translate(s / 2, s / 2); g.rotate(-.62);
+    for (let i = -9; i < 9; i++) { g.fillStyle = R(i % 2 ? B : mixc(B, C, .55), .92); g.fillRect(-s, i * s * .125, 2 * s, s * .062); }
+    g.restore();
+    g.globalCompositeOperation = 'screen'; radial(g, s, .62, .38, .36, A, .95); radial(g, s, .3, .78, .3, mixc(A, B, .5), .5); g.globalCompositeOperation = 'source-over';
+    g.strokeStyle = 'rgba(255,255,255,.4)'; g.lineWidth = s * .004; g.beginPath(); g.arc(.62 * s, .38 * s, .17 * s, 0, 7); g.stroke();
+  },
+  moon(g, s, A, B, C) {
+    const bg = g.createRadialGradient(s * .5, s * .38, 0, s * .5, s * .5, s * .8); bg.addColorStop(0, R(mixc(C, B, .6))); bg.addColorStop(1, R(mixc(C, BLACK, .4))); g.fillStyle = bg; g.fillRect(0, 0, s, s);
+    const rnd = mulberry(7); for (let i = 0; i < 80; i++) { g.fillStyle = `rgba(255,255,255,${.1 + rnd() * .55})`; const r = s * (.0015 + rnd() * .0022); g.beginPath(); g.arc(rnd() * s, rnd() * s * .62, r, 0, 7); g.fill(); }
+    radial(g, s, .5, .4, .45, A, .45);
+    const cres = layer(s, k => { const gr = k.createLinearGradient(s * .3, s * .2, s * .7, s * .62); gr.addColorStop(0, R(mixc(A, WHITE, .75))); gr.addColorStop(1, R(A)); k.fillStyle = gr; k.beginPath(); k.arc(s * .5, s * .42, s * .24, 0, 7); k.fill(); k.globalCompositeOperation = 'destination-out'; k.beginPath(); k.arc(s * .6, s * .37, s * .21, 0, 7); k.fill(); });
+    g.drawImage(cres, 0, 0);
+    const wy = s * .7; g.fillStyle = R(mixc(C, BLACK, .55), .94); g.fillRect(0, wy, s, s - wy);
+    for (let i = 0; i < 9; i++) { g.fillStyle = R(A, .5 - i * .05); const w = s * (.2 - i * .015); g.fillRect(s * .5 - w / 2 + Math.sin(i) * s * .01, wy + s * (.012 + i * .028), w, s * .005); }
+  }
+};
+function spaced(g, text, x, y, ls, right) { const w = [...text].reduce((a, ch) => a + g.measureText(ch).width + ls, -ls); let px = right ? x - w : x; for (const ch of text) { g.fillText(ch, px, y); px += g.measureText(ch).width + ls; } }
+function paintCover(tr, s) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = s; const g = cv.getContext('2d');
+  const [A, B, C] = tr.cov.map(rgb); STYLES[tr.style](g, s, A, B, C);
+  const vg = g.createRadialGradient(s / 2, s / 2, s * .35, s / 2, s / 2, s * .78); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.5)'); g.fillStyle = vg; g.fillRect(0, 0, s, s);
+  const im = g.getImageData(0, 0, s, s), d = im.data, rnd = mulberry(tr.id * 97 + 3);
+  for (let i = 0; i < d.length; i += 4) { const n = (rnd() - .5) * 26; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  g.putImageData(im, 0, 0);
+  g.fillStyle = 'rgba(255,255,255,.88)'; g.font = `500 ${Math.round(s * .026)}px "IBM Plex Mono", ui-monospace, monospace`; g.textBaseline = 'alphabetic';
+  spaced(g, tr.al.toUpperCase(), s * .06, s * .948, s * .006); spaced(g, tr.a.toUpperCase(), s * .06, s * .07, s * .006);
+  g.textAlign = 'left'; spaced(g, tr.fmt + ' ' + tr.bits, s * .94, s * .948, s * .006, true);
+  return cv;
+}
+function thumbOf(cv, n) { const c = document.createElement('canvas'); c.width = c.height = n; c.getContext('2d').drawImage(cv, 0, 0, n, n); return c.toDataURL('image/jpeg', .86); }
+
+/* ---------- palette tween ---------- */
+const pal = { from: null, to: null, cur: null, t: 1 };
+const palSp = new Spring(1, SP.glide, v => {
+  pal.t = v; if (!pal.from) return;
+  pal.cur = pal.to.map((c, i) => mixc(pal.from[i], c, clamp(v, 0, 1)));
+  applyPal();
+});
+const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
+function applyPal() {
+  ['--c1', '--c2', '--c3'].forEach((k, i) => stage.style.setProperty(k, RGB(pal.cur[i])));
+  const L = lum(pal.cur[0]), dark = (L + .05) / (.0032 + .05), white = 1.05 / (L + .05);
+  stage.style.setProperty('--on-glow', dark >= 4.5 || dark >= white ? '#0a0a0e' : '#ffffff');
+}
+function setPalette(p, instant) {
+  if (!pal.cur) { pal.cur = p; pal.to = p; pal.from = p; palSp.x = 1; palSp.t = 1; applyPal(); return; }
+  pal.from = pal.cur.map(c => c.slice()); pal.to = p;
+  if (instant) { pal.cur = p; applyPal(); return; }
+  palSp.x = 0; palSp.v = 0; palSp.to(1);
+}
+
+/* ---------- glass lens (SVG displacement as backdrop-filter) ---------- */
+const lensEls = [];
+let lensN = 0;
+function buildLens(el, r, bezel, strength) {
+  const w = el.offsetWidth, h = el.offsetHeight; if (!w || !h) return;
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d'), im = g.createImageData(w, h), d = im.data, hw = w / 2, hh = h / 2;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const px = x + .5 - hw, py = y + .5 - hh, qx = Math.abs(px) - (hw - r), qy = Math.abs(py) - (hh - r);
+    let nx = 0, ny = 0, dist;
+    if (qx > 0 && qy > 0) { const l = Math.hypot(qx, qy); dist = r - l; nx = Math.sign(px) * qx / l; ny = Math.sign(py) * qy / l; }
+    else if (qx > qy) { dist = r - qx; nx = Math.sign(px); } else { dist = r - qy; ny = Math.sign(py); }
+    const f = dist < bezel ? Math.pow(1 - clamp(dist, 0, bezel) / bezel, 2.4) : 0, i = (y * w + x) * 4;
+    d[i] = 128 - nx * f * 127; d[i + 1] = 128 - ny * f * 127; d[i + 2] = 128; d[i + 3] = 255;
+  }
+  g.putImageData(im, 0, 0);
+  const id = 'lens' + (lensN++);
+  $('#lensDefs').insertAdjacentHTML('beforeend', `<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0"><filter id="${id}" filterUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}" color-interpolation-filters="sRGB"><feImage href="${cv.toDataURL()}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="m"/><feDisplacementMap in="SourceGraphic" in2="m" scale="${strength * 2}" xChannelSelector="R" yChannelSelector="G"/></filter></svg>`);
+  lensEls.push({ el, id });
+}
+function applyLens() {
+  lensEls.forEach(({ el, id }) => {
+    const v = S.lens ? `url(#${id}) blur(var(--blur)) saturate(1.7)` : '';
+    el.style.backdropFilter = v; el.style.webkitBackdropFilter = v;
+  });
+}
+
+/* ---------- DOM bits ---------- */
+const dlBtn = (id, label) => `<button class="dl press" data-act="dl" data-id="${id}" data-dl="${id}" data-nodrag data-state="${st.dl[id] ? st.dl[id].state : 'idle'}" style="--prog:${st.dl[id] ? st.dl[id].prog : 0}" aria-label="Скачать">
+  <svg class="ring" viewBox="0 0 24 24"><circle class="rg-bg" cx="12" cy="12" r="9"/><circle class="rg-fg" cx="12" cy="12" r="9"/></svg>
+  <span class="di di-idle">${ICON.download}</span><span class="di di-chk">${ICON.check}</span></button>${label ? '' : ''}`;
+const rowHTML = tr => `<div class="row press" data-act="play" data-id="${tr.id}" role="button" tabindex="0">
+  <img class="rw-cov" src="${tr.thumb}" alt="">
+  <div style="min-width:0"><div class="rw-t">${tr.t}</div><div class="rw-a"><span class="q ${tr.hi ? 'hi' : ''}">${tr.q}</span><em>${tr.a}</em></div></div>
+  <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span class="rw-d mono">${fmt(tr.dur)}</span>
+  ${dlBtn(tr.id)}</div>`;
+const cardHTML = tr => `<div class="card press" data-act="play" data-id="${tr.id}" role="button" tabindex="0"><img src="${tr.thumb}" alt=""><div><b>${tr.al}</b><span>${tr.a}</span></div></div>`;
+
+function renderHome() {
+  const h = new Date().getHours(), greet = h < 5 ? 'Доброй ночи' : h < 12 ? 'Доброе утро' : h < 18 ? 'Добрый день' : 'Добрый вечер';
+  const date = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+  const hp = T[3].pal;
+  $('#home').innerHTML = `
+  <header class="hdr in" style="--i:0"><div><div class="eyebrow">${date}</div><h1 class="display">${greet}</h1></div><button class="gbtn glass press" aria-label="Настройки">${ICON.sliders}</button></header>
+  <article class="hero in press" style="--i:1; --h1:${RGB(hp[0])}; --h2:${RGB(hp[1])}" data-act="play" data-id="3" role="button" tabindex="0">
+    <div class="hb"></div>
+    <div class="hc"><span class="eyebrow" style="color:rgba(255,255,255,.7)">Выбор на вечер</span><h3>Тёплый шум,<br>холодный свет</h3>
+      <div class="hr"><p>24 трека · 1 ч 38 мин</p><span class="cta glass">${ICON.play}Слушать</span></div></div>
+  </article>
+  <div class="in" style="--i:2"><div class="sec"><h2>Продолжить</h2><span>Альбомы</span></div>
+    <div class="rail">${[0, 3, 7, 1, 4, 2].map(i => cardHTML(T[i])).join('')}</div></div>
+  <div class="in" style="--i:3"><div class="sec"><h2>Недавно</h2><span>Hi-Res</span></div>
+    <div class="rows">${[1, 6, 5, 2].map(i => rowHTML(T[i])).join('')}</div></div>
+  <div class="in" style="--i:4"><div class="sec"><h2>Настроения</h2><span>4 подборки</span></div>
+    <div class="moods">${MOODS.map(m => `<div class="mood press" data-act="mood" data-n="${m.n}" style="background:${m.c[1]}"><div style="position:absolute; inset:-40%; background:radial-gradient(closest-side at 30% 35%, ${m.c[0]}, transparent 70%), radial-gradient(closest-side at 75% 70%, ${m.c[0]}88, transparent 70%); animation:spin 50s linear infinite"></div><b>${m.n}</b><span>${m.k} трека</span></div>`).join('')}</div></div>`;
+}
+function renderSearch() {
+  const chips = [['all', 'Всё'], ['hires', 'Hi-Res'], ['dl', 'Скачано']];
+  $('#schips').innerHTML = chips.map(([k, n]) => `<button class="chip press" data-act="filter" data-f="${k}" aria-pressed="${st.filter === k}">${n}</button>`).join('');
+  const q = st.q.trim().toLowerCase();
+  let list = T.filter(t => (!q || (t.t + ' ' + t.a + ' ' + t.al + ' ' + t.genre).toLowerCase().includes(q)) && (st.filter === 'all' || (st.filter === 'hires' && t.hi) || (st.filter === 'dl' && st.dl[t.id] && st.dl[t.id].state === 'done')));
+  const body = $('#sbody');
+  if (!q && st.filter === 'all') {
+    body.innerHTML = `<div class="sec"><h2>Жанры</h2><span>6</span></div><div class="genres">${GENRES.map(g => `<div class="genre press" data-act="genre" data-n="${g.n}" style="height:${g.h}px; background:${g.c[1]}; --g:radial-gradient(closest-side at 28% 30%, ${g.c[0]}, transparent 70%), radial-gradient(closest-side at 78% 76%, ${g.c[0]}99, transparent 66%)"><b>${g.n}</b></div>`).join('')}</div>`;
+  } else if (!list.length) {
+    body.innerHTML = `<div class="empty"><b>Ничего не нашлось</b>Попробуйте другое слово или снимите фильтр.</div>`;
+  } else {
+    body.innerHTML = `<div class="sec"><h2>Результаты</h2><span>${list.length}</span></div><div class="rows">${list.map(rowHTML).join('')}</div>`;
+  }
+  markNow(); $$('[data-dl]', body).forEach(el => dlUI(+el.dataset.dl));
+}
+function storage() { const ids = Object.keys(st.dl).filter(k => st.dl[k].state === 'done').map(Number); return { ids, mb: ids.reduce((a, i) => a + T[i].mb, 0) }; }
+function renderLibrary(anim) {
+  const body = $('#libBody'); let html = '';
+  if (st.lib === 'playlists') {
+    html = `<div class="grid2">${PLAYLISTS.map((p, i) => `<div class="pcard press" data-act="plist" data-i="${i}"><div class="stack">${p.ids.slice(0, 3).map(id => `<img src="${T[id].thumb}" alt="">`).join('')}</div><div><b>${p.n}</b><span>${p.ids.length} трека · ${Math.round(p.ids.reduce((a, id) => a + T[id].dur, 0) / 60)} мин</span></div></div>`).join('')}</div>`;
+  } else if (st.lib === 'albums') {
+    html = `<div class="grid2">${T.map(t => `<div class="pcard press" data-act="play" data-id="${t.id}"><div class="stack" style="background:none; box-shadow:none"><img src="${t.thumb}" alt="" style="position:static; width:100%; transform:none; border-radius:28px"></div><div><b>${t.al}</b><span>${t.a}</span></div></div>`).join('')}</div>`;
+  } else {
+    const s = storage(), cap = 2048, groups = { 'Hi-Res FLAC': 0, 'FLAC': 0, 'MP3': 0 };
+    s.ids.forEach(i => { const t = T[i]; groups[t.fmt === 'MP3' ? 'MP3' : t.hi ? 'Hi-Res FLAC' : 'FLAC'] += t.mb; });
+    const cols = { 'Hi-Res FLAC': 'var(--c1)', 'FLAC': 'var(--c2)', 'MP3': 'rgba(255,255,255,.5)' };
+    html = `<div class="meter glass"><div class="mt"><b>${s.mb < 1000 ? Math.round(s.mb) + ' МБ' : (s.mb / 1024).toFixed(1).replace('.', ',') + ' ГБ'}</b><span>ЛИМИТ ${cap / 1024} ГБ</span></div>
+      <div class="bar">${Object.entries(groups).filter(([, v]) => v > 0).map(([k, v]) => `<i style="flex-grow:${v}; background:${cols[k]}"></i>`).join('')}<i class="rest" style="flex-grow:${Math.max(.01, cap - s.mb) / 40}"></i></div>
+      <div class="legend">${Object.entries(groups).filter(([, v]) => v > 0).map(([k, v]) => `<span><i style="background:${cols[k]}"></i>${k} · ${Math.round(v)} МБ</span>`).join('')}</div></div>
+      <div class="rows">${s.ids.length ? s.ids.map(i => rowHTML(T[i])).join('') : '<div class="empty"><b>Пока пусто</b>Нажмите на значок загрузки у любого трека.</div>'}</div>`;
+  }
+  body.innerHTML = html;
+  if (anim) body.animate([{ opacity: 0, transform: 'translateY(14px)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 520 * TM(), easing: EASE });
+  markNow(); $$('[data-dl]', body).forEach(el => dlUI(+el.dataset.dl));
+}
+function renderQueue() {
+  const order = T.map((_, k) => (st.cur + k) % T.length);
+  $('#qList').innerHTML = order.map(i => rowHTML(T[i])).join('');
+  markNow(); $$('[data-dl]', $('#qList')).forEach(el => dlUI(+el.dataset.dl));
+}
+function markNow() {
+  $$('.row').forEach(r => r.classList.toggle('now', +r.dataset.id === st.cur));
+}
+function dlUI(id) {
+  const d = st.dl[id] || { state: 'idle', prog: 0 };
+  $$(`[data-dl="${id}"]`).forEach(el => { el.dataset.state = d.state; el.style.setProperty('--prog', d.prog.toFixed(3)); });
+  if (+$('#tbDl').dataset.dl === id) $('#tbDlLabel').textContent = d.state === 'done' ? 'Скачано' : d.state === 'dl' ? Math.round(d.prog * 100) + '%' : 'Скачать';
+}
+
+/* ---------- static icon fill ---------- */
+$$('.tab').forEach((b, i) => b.innerHTML = [ICON.home, ICON.search, ICON.lib][i] + `<span>${['Главная', 'Поиск', 'Медиатека'][i]}</span>`);
+$('#miPlay').innerHTML = ICON.play; $('#miPause').innerHTML = ICON.pause;
+$('#bgPlay').innerHTML = ICON.play; $('#bgPause').innerHTML = ICON.pause;
+$('#bClose').innerHTML = ICON.down; $('#bMore').innerHTML = ICON.more; $('#bLike').innerHTML = ICON.heart;
+$('#bShuf').innerHTML = ICON.shuffle; $('#bPrev').innerHTML = ICON.prev; $('#bNext').innerHTML = ICON.next; $('#bRep').innerHTML = ICON.repeat;
+$('#tbLy').innerHTML = ICON.lyrics + 'Текст'; $('#tbQ').innerHTML = ICON.queue + 'Очередь';
+$('#bQClose').innerHTML = ICON.down;
+$('#tbDlSlot').outerHTML = `<button class="tb press" data-nodrag style="width:100%;height:100%" data-act="dl" id="tbDl" data-dl="0" data-id="0" data-state="idle">
+  <span class="dl" style="pointer-events:none" data-dlmirror><svg class="ring" viewBox="0 0 24 24"><circle class="rg-bg" cx="12" cy="12" r="9"/><circle class="rg-fg" cx="12" cy="12" r="9"/></svg><span class="di di-idle">${ICON.download}</span><span class="di di-chk">${ICON.check}</span></span><span id="tbDlLabel">Скачать</span></button>`;
+
+/* ---------- cover + player geometry ---------- */
+const MINI = { y: 678 }, THUMB = { x: 27, y: 689, s: 44 }, BIG = { x: 31, y: 112, s: 328 }, LYR = { x: 31, y: 106, s: 56 }, QUE = { x: 95, y: 100, s: 200 };
+const cover = $('#cover'), cvIn = $('#cvIn'), playerEl = $('#player'), miniEl = $('#mini'), tabbar = $('#tabbar');
+let P = 0, ML = 0, MQ = 0;
+const risers = $$('.rise');
+function applyRise() {
+  const c = clamp(P, 0, 1), hide = 1 - clamp(MQ * 1.5, 0, 1);
+  risers.forEach(el => {
+    const i = +el.dataset.rise, loc = clamp((c - .32 - i * .05) / .45, 0, 1), e = 1 - Math.pow(1 - loc, 3);
+    const keep = (i === 0 || i === 5) ? 1 : hide;
+    el.style.opacity = (e * keep).toFixed(3);
+    el.style.transform = `translateY(${((1 - e) * 30).toFixed(1)}px)`;
+    el.style.pointerEvents = e > .5 && keep > .5 ? 'auto' : 'none';
+  });
+  $('#tbox').style.transform = `translate(${lerp(0, 72, ML)}px, ${lerp(0, 106 - 466, ML)}px) scale(${lerp(1, .74, ML)})`;
+  $('#plBg').style.opacity = clamp(c * 9, 0, 1);
+}
+function placeCover() {
+  const mx = Math.max(0, ML - MQ * ML);
+  const bx = lerp(lerp(BIG.x, LYR.x, ML), QUE.x, MQ), by = lerp(lerp(BIG.y, LYR.y, ML), QUE.y, MQ), bs = lerp(lerp(BIG.s, LYR.s, ML), QUE.s, MQ);
+  const x = lerp(THUMB.x, bx, P), y = lerp(THUMB.y, by, P), s = lerp(THUMB.s, bs, P), sc = Math.max(.01, s / 328);
+  const rr = lerp(14, lerp(lerp(38, 14, ML), 30, MQ), clamp(P, 0, 1.2));
+  cover.style.transform = `translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0) scale(${sc.toFixed(4)})`;
+  cover.style.borderRadius = (rr / sc).toFixed(2) + 'px';
+}
+function setP(p) {
+  P = p; const c = clamp(p, 0, 1);
+  phone.style.setProperty('--p', c.toFixed(4));
+  playerEl.style.clipPath = `inset(${lerp(MINI.y, 0, c).toFixed(1)}px ${lerp(16, 0, c).toFixed(1)}px ${lerp(100, 0, c).toFixed(1)}px ${lerp(16, 0, c).toFixed(1)}px round ${lerp(33, 48, c).toFixed(1)}px)`;
+  playerEl.style.visibility = c > .002 ? 'visible' : 'hidden';
+  miniEl.style.opacity = (1 - clamp(c * 12, 0, 1)).toFixed(3);
+  $('#miIn').style.opacity = (1 - clamp(c * 6, 0, 1)).toFixed(3);
+  miniEl.style.pointerEvents = c > .04 ? 'none' : 'auto';
+  const tb = clamp(c * 1.8, 0, 1);
+  tabbar.style.transform = `translateY(${(tb * 120).toFixed(1)}px)`; tabbar.style.opacity = (1 - tb).toFixed(3);
+  $('#screens').style.transform = `scale(${(1 - .06 * c).toFixed(4)})`;
+  $('#shade').style.opacity = (c * .78).toFixed(3); $('#dockfade').style.opacity = (1 - clamp(c * 3, 0, 1)).toFixed(3);
+  $('#plDrag').style.pointerEvents = c > .5 && ML < .1 && MQ < .1 ? 'auto' : 'none';
+  applyRise(); placeCover();
+}
+const pSp = new Spring(0, SP.float, setP);
+const mlSp = new Spring(0, SP.glide, v => { ML = v; $('#lyrics').style.opacity = clamp(v, 0, 1); $('#lyrics').style.pointerEvents = v > .5 ? 'auto' : 'none'; $('#tbLy').classList.toggle('on', v > .5); applyRise(); placeCover(); $('#plDrag').style.pointerEvents = P > .5 && ML < .1 && MQ < .1 ? 'auto' : 'none'; });
+const mqSp = new Spring(0, SP.float, v => { MQ = v; $('#queue').style.transform = `translateY(${((1 - v) * 560).toFixed(1)}px)`; $('#tbQ').classList.toggle('on', v > .5); applyRise(); placeCover(); $('#plDrag').style.pointerEvents = P > .5 && ML < .1 && MQ < .1 ? 'auto' : 'none'; });
+const openPlayer = () => pSp.to(1);
+const closePlayer = () => { pSp.to(0); mlSp.to(0); mqSp.to(0); };
+
+/* sheet drag */
+let drag = null, suppress = false;
+function bindDrag(el) {
+  el.addEventListener('pointerdown', e => {
+    if (e.target.closest('[data-nodrag]')) return;
+    drag = { y: e.clientY, p0: P, moved: false, h: [{ t: e.timeStamp, p: P }], id: e.pointerId, el };
+    pSp.hold(); el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove', e => {
+    if (!drag || drag.el !== el) return;
+    const dy = (drag.y - e.clientY) / SC; if (Math.abs(dy) > 5) drag.moved = true;
+    if (!drag.moved) return;
+    let np = drag.p0 + dy / 540; if (np > 1) np = 1 + (np - 1) * .22; if (np < 0) np = np * .22;
+    setP(np); drag.h.push({ t: e.timeStamp, p: np }); if (drag.h.length > 6) drag.h.shift();
+  });
+  const end = e => {
+    if (!drag || drag.el !== el) return; const d = drag; drag = null;
+    if (!d.moved) { if (P < .5) openPlayer(); return; }
+    suppress = true; setTimeout(() => suppress = false, 0);
+    const a = d.h[0], b = d.h[d.h.length - 1], v = b.t > a.t ? (b.p - a.p) / ((b.t - a.t) / 1000) : 0;
+    pSp.to((P + v * .16) > .5 ? 1 : 0, clamp(v, -6, 6));
+  };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+}
+bindDrag(miniEl); bindDrag($('#plDrag'));
+document.addEventListener('click', e => { if (suppress) { e.stopPropagation(); e.preventDefault(); } }, true);
+
+/* ---------- indicators (liquid) ---------- */
+class Indicator {
+  constructor(box, ind, sel) { this.box = box; this.ind = ind; this.sel = sel; this.w = 0; this.sp = new Spring(0, SP.liquid, x => this.draw(x)); this.first = true; }
+  draw(x) { const stretch = clamp(Math.abs(this.sp.v) * .045, 0, 46); this.ind.style.width = (this.w + stretch) + 'px'; this.ind.style.transform = `translateX(${(x - stretch / 2).toFixed(2)}px) scaleY(${(1 - stretch * .0035).toFixed(3)})`; }
+  to(btn, instant) { const b = this.box.getBoundingClientRect(), r = btn.getBoundingClientRect(); const x = (r.left - b.left) / SC, w = r.width / SC; this.w = w - (this.pad || 0) * 2; const tx = x + (this.pad || 0); if (instant || this.first) { this.first = false; this.sp.jump(tx); } else this.sp.to(tx); }
+}
+const tabInd = new Indicator(tabbar, $('#tabInd')); tabInd.pad = 4;
+const segInd = new Indicator($('#seg'), $('#segInd')); segInd.pad = 4;
+
+/* ---------- playback ---------- */
+const wv = { data: [], hover: -1, down: false };
+function waveData(tr) { const r = mulberry(tr.id * 131 + 11), n = 64, out = []; let prev = .5; for (let i = 0; i < n; i++) { const x = i / (n - 1), env = .5 + .5 * Math.pow(Math.sin(Math.PI * clamp(x * 1.05 + .02, 0, 1)), .55), v = .3 + .7 * r(); prev = prev * .45 + v * .55; out.push(clamp(env * (.35 + .65 * prev), .12, 1)); } return out; }
+function roll(el, html) {
+  if (el.dataset.v === html) return; el.dataset.v = html;
+  if (!el.innerHTML) { el.innerHTML = html; return; }
+  const d = TM();
+  el.animate([{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-10px)' }], { duration: 170 * d, easing: 'ease-in', fill: 'forwards' }).finished.then(() => {
+    el.innerHTML = html; el.getAnimations().forEach(a => a.cancel());
+    el.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 480 * d, easing: EASE });
+  }).catch(() => { el.innerHTML = html; });
+}
+function swapCover(tr, dir, first) {
+  const im = new Image(); im.alt = ''; im.src = tr.big; const old = cvIn.querySelector('img:last-of-type'); cvIn.appendChild(im);
+  if (!old || first) { if (old) old.remove(); return; }
+  const d = 640 * TM();
+  im.animate([{ opacity: 0, transform: `translateX(${dir * 44}px) scale(1.09) rotate(${dir * 3}deg)`, filter: 'blur(12px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }], { duration: d, easing: EASE });
+  old.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateX(${-dir * 40}px) scale(.93) rotate(${-dir * 3}deg)` }], { duration: d * .8, easing: 'ease-in', fill: 'forwards' }).finished.then(() => old.remove()).catch(() => old.remove());
+}
+function renderSwatches() {
+  const names = ['Glow', 'Echo', 'Deep'];
+  $('#sw').innerHTML = pal.to.map((c, i) => `<div style="background:${hex(c)}"><b>${names[i]}</b>${hex(c).toUpperCase()}</div>`).join('');
+}
+function setTrack(i, { play = true, first = false, dir = 1 } = {}) {
+  st.cur = i; st.t = first ? 62 : 0; if (play) st.playing = true;
+  const tr = cur();
+  swapCover(tr, dir, first);
+  roll($('#miTitle'), tr.t); roll($('#miArtist'), tr.a); roll($('#plTitle'), tr.t); roll($('#plArtist'), tr.a); roll($('#plAlbum'), tr.al);
+  $('#bBadge').textContent = tr.q + (tr.hi ? ' · Hi-Res' : ''); $('#bBadge').dataset.tip = tr.q;
+  setPalette(tr.pal, first); renderSwatches();
+  wv.data = waveData(tr); renderLyrics(); renderQueue(); markNow(); syncPlay();
+  const tb = $('#tbDl'); tb.dataset.dl = i; tb.dataset.id = i; dlUI(i);
+  $('#bLike').classList.toggle('on', st.liked.has(i));
+  const tn = $('#tbDl .dl'); tn.dataset.state = (st.dl[i] || {}).state || 'idle';
+  $('#np').innerHTML = `<div>Трек <b>${tr.t}</b></div><div>Формат <b>${tr.fmt} ${tr.bits}</b></div><div>Битрейт <b>${tr.kbps} кбит/с</b></div><div>Размер файла <b>${tr.mb.toFixed(1).replace('.', ',')} МБ</b></div><div>Жанр <b>${tr.genre}</b></div>`;
+  updateProgress(true);
+}
+function syncPlay() { phone.classList.toggle('is-playing', st.playing); }
+function next(auto) { const n = st.shuf ? (st.cur + 1 + Math.floor(Math.random() * (T.length - 1))) % T.length : (st.cur + 1) % T.length; if (auto && st.rep) { st.t = 0; return; } setTrack(n, { dir: 1 }); }
+function prev() { if (st.t > 4) { st.t = 0; return; } setTrack((st.cur + T.length - 1) % T.length, { dir: -1 }); }
+
+/* lyrics */
+let lyA = -2;
+function renderLyrics() { $('#lyIn').innerHTML = cur().lyr.map((l, i) => `<p class="ly" data-act="seekline" data-i="${i}">${l}</p>`).join(''); lyA = -2; updateLyrics(); }
+const lyStep = () => cur().dur / (cur().lyr.length + 1.2);
+function updateLyrics() {
+  const a = Math.min(cur().lyr.length - 1, Math.max(0, Math.floor(st.t / lyStep() - .6)));
+  if (a === lyA) return; lyA = a;
+  $$('.ly').forEach((el, i) => { const d = Math.abs(i - a); el.style.opacity = d === 0 ? 1 : Math.max(.16, .5 - d * .11); el.style.filter = d === 0 ? 'none' : `blur(${Math.min(5, d * 1.2).toFixed(1)}px)`; el.style.transform = d === 0 ? 'scale(1)' : 'scale(.9)'; });
+  const el = $$('.ly')[a]; if (el) $('#lyIn').style.transform = `translateY(${(352 * .36 - (el.offsetTop + el.offsetHeight / 2)).toFixed(1)}px)`;
+}
+
+/* progress + wave */
+const wvc = $('#wvc'), wctx = wvc.getContext('2d');
+function sizeWave() { const k = Math.min(3, (window.devicePixelRatio || 1) * SC); wvc.width = Math.ceil(328 * k); wvc.height = Math.ceil(48 * k); wvc.dataset.k = k; }
+function drawWave(now) {
+  const k = +wvc.dataset.k || 1, g = wctx, w = 328, h = 48, n = wv.data.length; if (!n) return;
+  g.setTransform(k, 0, 0, k, 0, 0); g.clearRect(0, 0, w, h);
+  const bw = 3.3, gap = (w - n * bw) / (n - 1), px = st.t / cur().dur * w, focus = wv.hover >= 0 ? wv.hover * w : null, col = RGB(pal.cur[0]);
+  for (let i = 0; i < n; i++) {
+    const x = i * (bw + gap), cx = x + bw / 2;
+    const m = 1 + (focus !== null ? .5 * Math.exp(-Math.pow((cx - focus) / 36, 2)) : 0);
+    const live = st.playing ? 1 + .09 * Math.sin(now * .007 + i * .8) * Math.exp(-Math.pow((cx - px) / 54, 2)) : 1;
+    const hh = clamp(wv.data[i] * h * .86 * m * live, 4, h), played = cx <= px;
+    g.fillStyle = played ? col : 'rgba(255,255,255,.24)';
+    if (played) { g.shadowColor = col; g.shadowBlur = Math.exp(-Math.pow((cx - px) / 40, 2)) * 10; } else g.shadowBlur = 0;
+    g.beginPath(); const y = (h - hh) / 2, r = bw / 2; g.moveTo(x + r, y); g.arcTo(x + bw, y, x + bw, y + hh, r); g.arcTo(x + bw, y + hh, x, y + hh, r); g.arcTo(x, y + hh, x, y, r); g.arcTo(x, y, x + bw, y, r); g.fill();
+  }
+  g.shadowBlur = 0; g.fillStyle = '#fff'; g.shadowColor = col; g.shadowBlur = 12; g.fillRect(clamp(px, 0, w) - 1, 3, 2, h - 6); g.shadowBlur = 0;
+}
+let lastSec = -1;
+function updateProgress(force) {
+  const d = cur().dur; $('#miBar').style.transform = `scaleX(${clamp(st.t / d, 0, 1).toFixed(4)})`;
+  const sec = Math.floor(st.t); if (sec !== lastSec || force) { lastSec = sec; $('#tEl').textContent = fmt(st.t); $('#tRem').textContent = '-' + fmt(d - st.t); }
+  updateLyrics();
+}
+const wave = $('#wave'), bubble = $('#bubble');
+function seekFromEvent(e) { const r = wave.getBoundingClientRect(), f = clamp((e.clientX - r.left) / r.width, 0, 1); wv.hover = f; st.t = f * cur().dur; bubble.style.left = (f * 328) + 'px'; bubble.textContent = fmt(st.t); updateProgress(true); }
+wave.addEventListener('pointerdown', e => { wv.down = true; wave.setPointerCapture(e.pointerId); bubble.classList.add('on'); seekFromEvent(e); });
+wave.addEventListener('pointermove', e => { if (wv.down) seekFromEvent(e); else { const r = wave.getBoundingClientRect(); wv.hover = clamp((e.clientX - r.left) / r.width, 0, 1); } });
+wave.addEventListener('pointerup', () => { wv.down = false; bubble.classList.remove('on'); });
+wave.addEventListener('pointercancel', () => { wv.down = false; bubble.classList.remove('on'); });
+wave.addEventListener('pointerleave', () => { if (!wv.down) wv.hover = -1; });
+
+/* ---------- toast ---------- */
+let toastAnim = null, toastTimer = 0;
+function toast(html, img) {
+  const el = $('#toast'); el.innerHTML = (img ? `<img src="${img}" alt="">` : '') + `<div>${html}</div>`;
+  if (toastAnim) toastAnim.cancel();
+  el.style.transform = 'translateX(-50%)';
+  toastAnim = el.animate([{ opacity: 0, transform: 'translateX(-50%) translateY(-26px) scale(.86)', filter: 'blur(6px)' }, { opacity: 1, transform: 'translateX(-50%) translateY(0) scale(1)', filter: 'blur(0)' }], { duration: 640 * TM(), easing: 'cubic-bezier(.34,1.56,.64,1)', fill: 'forwards' });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastAnim = el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateX(-50%) translateY(-14px) scale(.94)' }], { duration: 380 * TM(), easing: 'ease-in', fill: 'forwards' }); }, 2600 * TM());
+}
+
+/* ---------- downloads ---------- */
+function toggleDl(id) {
+  const d = st.dl[id];
+  if (!d || d.state === 'idle') { st.dl[id] = { state: 'dl', prog: 0, speed: 1 / clamp(2.6 + T[id].mb / 40, 3, 8) }; toast(`Скачивание · ${T[id].t}<br><span>${T[id].q.toUpperCase()} · ${T[id].mb.toFixed(1).replace('.', ',')} МБ</span>`, T[id].thumb); }
+  else if (d.state === 'dl') { delete st.dl[id]; toast(`Загрузка отменена<br><span>${T[id].t}</span>`, T[id].thumb); }
+  else { toast(`Уже на устройстве<br><span>${T[id].q.toUpperCase()}</span>`, T[id].thumb); }
+  dlUI(id);
+}
+
+/* ---------- events ---------- */
+function setTab(name) {
+  if (st.tab === name) { const sc = $('#' + name); sc.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  st.tab = name; $$('.screen').forEach(s => s.classList.toggle('on', s.id === name));
+  const btns = $$('.tab'); btns.forEach(b => b.classList.toggle('on', b.dataset.tab === name)); tabInd.to(btns.find(b => b.dataset.tab === name));
+  if (name === 'library') { requestAnimationFrame(() => segInd.to($('#seg .on'), true)); }
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const act = a.dataset.act, id = a.dataset.id !== undefined ? +a.dataset.id : null;
+  switch (act) {
+    case 'tab': setTab(a.dataset.tab); break;
+    case 'play': if (id === st.cur) { st.playing = !st.playing; syncPlay(); } else setTrack(id, { dir: id > st.cur ? 1 : -1 }); break;
+    case 'toggle': st.playing = !st.playing; syncPlay(); break;
+    case 'next': next(); break; case 'prev': prev(); break;
+    case 'close': closePlayer(); break;
+    case 'like': { const on = !st.liked.has(st.cur); on ? st.liked.add(st.cur) : st.liked.delete(st.cur); a.classList.toggle('on', on); a.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35)' }, { transform: 'scale(1)' }], { duration: 520 * TM(), easing: 'cubic-bezier(.34,1.56,.64,1)' }); break; }
+    case 'shuffle': st.shuf = !st.shuf; a.classList.toggle('on', st.shuf); toast(st.shuf ? 'Перемешивание включено' : 'Перемешивание выключено'); break;
+    case 'repeat': st.rep = !st.rep; a.classList.toggle('on', st.rep); toast(st.rep ? 'Повтор трека' : 'Повтор выключен'); break;
+    case 'lyrics': mqSp.to(0); mlSp.to(ML > .5 ? 0 : 1); break;
+    case 'queue': mlSp.to(0); mqSp.to(1); break;
+    case 'qclose': mqSp.to(0); break;
+    case 'dl': toggleDl(id !== null ? id : st.cur); break;
+    case 'quality': toast(`Поток без потерь<br><span>${cur().q.toUpperCase()} · ${cur().kbps} КБИТ/С</span>`, cur().thumb); break;
+    case 'more': toast('Меню трека<br><span>В ПРОТОТИПЕ НЕ РЕАЛИЗОВАНО</span>'); break;
+    case 'seekline': st.t = (+a.dataset.i + .6) * lyStep(); updateProgress(true); break;
+    case 'lib': st.lib = a.dataset.lib; $$('#seg button').forEach(b => b.classList.toggle('on', b === a)); segInd.to(a); renderLibrary(true); break;
+    case 'filter': st.filter = a.dataset.f; renderSearch(); break;
+    case 'plist': { const p = PLAYLISTS[+a.dataset.i]; setTrack(p.ids[0]); toast(`Плейлист «${p.n}»<br><span>${p.ids.length} ТРЕКА</span>`, T[p.ids[0]].thumb); break; }
+    case 'mood': toast(`Подборка «${a.dataset.n}»<br><span>СКОРО В ПРОТОТИПЕ</span>`); break;
+    case 'genre': st.q = a.dataset.n; $('#q').value = st.q; renderSearch(); break;
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input')) { if (e.key === 'Escape') e.target.blur(); return; }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role=button]')) { e.preventDefault(); e.target.click(); return; }
+  if (e.key === 'Escape') { if (MQ > .5) mqSp.to(0); else if (ML > .5) mlSp.to(0); else closePlayer(); }
+  else if (e.key === ' ') { e.preventDefault(); st.playing = !st.playing; syncPlay(); }
+});
+$('#q').addEventListener('input', e => { st.q = e.target.value; renderSearch(); });
+miniEl.addEventListener('keydown', e => { if (e.key === 'Enter') openPlayer(); });
+
+/* tuner */
+const rng = (id, out, fn, fmtv) => { const r = $(id), o = $(out); const up = () => { const v = +r.value, mn = +r.min, mx = +r.max; r.style.setProperty('--v', ((v - mn) / (mx - mn) * 100) + '%'); fn(v); o.textContent = fmtv(v); }; r.addEventListener('input', up); up(); };
+rng('#rGrain', '#oGrain', v => { S.grain = v / 100; stage.style.setProperty('--grain', S.grain); }, v => v + '%');
+rng('#rBlur', '#oBlur', v => { S.blur = v; stage.style.setProperty('--blur', v + 'px'); }, v => v + ' dp');
+rng('#rAur', '#oAur', v => { S.aurora = v / 100; stage.style.setProperty('--aurora', S.aurora); }, v => v + '%');
+rng('#rSpd', '#oSpd', v => { S.speed = v / 100; stage.style.setProperty('--tm', 1 / S.speed); $('#bSlow').setAttribute('aria-pressed', String(v === 25)); }, v => (v / 100).toString().replace('.', ',') + '×');
+$('#bSlow').addEventListener('click', () => { const r = $('#rSpd'); r.value = r.value === '25' ? '100' : '25'; r.dispatchEvent(new Event('input')); });
+$('#cLens').addEventListener('change', e => { S.lens = e.target.checked; applyLens(); });
+
+/* spring panel */
+function springPanel() {
+  $('#springs').innerHTML = Object.values(SP).map(s => {
+    const c = 2 * s.z * Math.sqrt(s.k), pts = []; let x = 0, v = 0; const dt = .004, T_ = 1.1;
+    for (let t = 0; t <= T_; t += dt) { v += (-s.k * (x - 1) - c * v) * dt; x += v * dt; if (Math.round(t / dt) % 4 === 0) pts.push([t / T_ * 96, 40 - x * 28]); }
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
+    return `<div class="spr"><svg viewBox="0 0 96 44" aria-hidden="true"><path d="M0 12H96" stroke="rgba(255,255,255,.14)" stroke-dasharray="2 3" fill="none"/><path d="${d}" fill="none" stroke="var(--c1)" stroke-width="2" stroke-linecap="round"/></svg><div><b>${s.name}</b><span>${s.code}<br>${s.use}</span></div></div>`;
+  }).join('');
+}
+
+/* ---------- frame loop ---------- */
+let last = performance.now(), lx = .2, ly = 0, tx = .2, ty = 0, ptrAt = -1e9, tick = 0;
+phone.addEventListener('pointermove', e => { const r = phone.getBoundingClientRect(); tx = clamp((e.clientX - r.left) / r.width, 0, 1); ty = clamp((e.clientY - r.top) / r.height, 0, 1); ptrAt = performance.now(); });
+function frame(now) {
+  const rdt = Math.min(.05, (now - last) / 1000); last = now; const dt = rdt * S.speed;
+  springs.forEach(sp => sp.step(dt));
+  if (st.playing) { st.t += rdt; if (st.t >= cur().dur) next(true); updateProgress(); }
+  for (const id in st.dl) { const d = st.dl[id]; if (d.state !== 'dl') continue; d.prog = Math.min(1, d.prog + rdt * d.speed * (.55 + .9 * Math.abs(Math.sin(now * .0017 + +id)))); if (d.prog >= 1) { d.state = 'done'; d.prog = 1; toast(`Готово · ${T[id].t}<br><span>СОХРАНЕНО В ${T[id].q.toUpperCase()}</span>`, T[id].thumb); if (st.lib === 'downloads' && st.tab === 'library') renderLibrary(false); if (st.filter === 'dl') renderSearch(); } dlUI(+id); }
+  if (now - ptrAt > 3500) { tx = .5 + .42 * Math.sin(now * .00022); ty = .02 + .12 * (1 + Math.sin(now * .00031)); }
+  const k = Math.min(1, rdt * 5); lx += (tx - lx) * k; ly += (ty - ly) * k;
+  if ((tick++ & 1) === 0) { phone.style.setProperty('--lx', lx.toFixed(3)); phone.style.setProperty('--ly', ly.toFixed(3)); }
+  if (P > .35 && pal.cur) drawWave(now);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- layout ---------- */
+function fit() {
+  const wide = window.innerWidth > 1040, sw = stage.clientWidth, sh = stage.clientHeight;
+  SC = wide ? Math.min(1.1, (sh - 56) / 844) : Math.min(sw / 390, sh / 844);
+  SC = Math.max(.3, SC); slot.style.setProperty('--s', SC.toFixed(4)); document.documentElement.classList.toggle('frameless', !wide); stage.classList.toggle('frameless', !wide);
+  sizeWave();
+  if (tabInd.sp) { tabInd.to($('.tab.on'), true); if (st.tab === 'library') segInd.to($('#seg .on'), true); }
+}
+new ResizeObserver(fit).observe(stage);
+
+/* ---------- boot ---------- */
+async function boot() {
+  try { await Promise.race([Promise.all([document.fonts.load('500 24px "IBM Plex Mono"'), document.fonts.load('600 24px "Cormorant Garamond"'), document.fonts.load('700 14px Manrope')]), new Promise(r => setTimeout(r, 1500))]); } catch (e) { }
+  const noise = document.createElement('canvas'); noise.width = noise.height = 220; const ng = noise.getContext('2d'), im = ng.createImageData(220, 220), rr = mulberry(42);
+  for (let i = 0; i < im.data.length; i += 4) { const v = rr(), a = Math.pow(Math.abs(v - .5) * 2, 2); im.data[i] = im.data[i + 1] = im.data[i + 2] = v > .5 ? 255 : 0; im.data[i + 3] = a * 92; }
+  ng.putImageData(im, 0, 0); $('#grain').style.backgroundImage = `url(${noise.toDataURL()})`;
+
+  T.forEach(tr => { const cv = paintCover(tr, 640); tr.big = cv.toDataURL('image/jpeg', .9); tr.thumb = thumbOf(cv, 176); tr.pal = extractPalette(cv, tr.cov); });
+  renderHome(); renderSearch(); renderLibrary(false); springPanel(); fit();
+  tabInd.to($('.tab.on'), true);
+  [[tabbar, 32, 26, 16], [miniEl, 33, 26, 16], [$('#toolbar'), 28, 22, 14], [$('.sfield'), 27, 20, 12]].forEach(([el, r, b, s]) => buildLens(el, r, b, s));
+  applyLens();
+  setTrack(0, { first: true });
+  setP(0); mlSp.jump(0); mqSp.jump(0);
+  const clock = () => { const d = new Date(); $('#clock').textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }; clock(); setInterval(clock, 20000);
+  last = performance.now(); requestAnimationFrame(frame);
+  window.__cloudly = { st, openPlayer, closePlayer, setTab, setTrack, mlSp, mqSp, pSp, toggleDl, T };
+}
+boot();
+})();
+</script>
+</body>
+</html>
